@@ -837,3 +837,20 @@ Chosen while implementing YouTube captions + VTT/SRT.
 6. **Fallback copy.** No captions / private / age-restricted videos are skipped (job `error` if nothing indexed, `partial` if some videos succeeded) with a message to export VTT/SRT or wait for v1.1 Whisper. yt-dlp missing is silent; the same fallback text still applies.
 7. **Unit tests mock network.** Recorded HTML/JSON/XML fixtures under `test/fixtures/youtube/`. Live YouTube is a manual/demo script (`scripts/youtube-demo.ts`), not CI.
 8. **Schema version stays 2.** No migration. FTS triggers from M1 index caption text like any other chunk.
+
+---
+
+## 27. Spec amendments (M9)
+
+Chosen while implementing remote / HTTP mode.
+
+1. **OAuth is in M9.** Official docs: claude.ai and ChatGPT accept no-auth URLs (plus optional OAuth / request headers). Gemini Spark custom apps document DCR or an Advanced-features client id/secret and do not document no-auth; field reports confirm RFC 9728 → 8414 → 7591. Single-user OAuth 2.1 + PKCE S256 + DCR + CIMD therefore ships in M9 so the Gemini app path is not blocked at launch. Consent is a local HTML page (or `--oauth-auto-approve` in tests). Clients persist in `$COURSECOPILOT_HOME/oauth.json` (0600).
+2. **Secret path and bearer share one 128-bit hex token** unless `--secret-path` / `COURSECOPILOT_SECRET_PATH` is set separately. `/mcp/<token>` is enough for claude.ai/ChatGPT “no auth”; `/mcp` requires `Authorization: Bearer` or an OAuth access token. `HEAD`/`POST /` also serve MCP so a client that pastes the origin still works.
+3. **`@modelcontextprotocol/node@2.1.1`.** The Node Streamable HTTP adapter is versioned separately from `@modelcontextprotocol/server@2.3.1` (peer `^2.3.0`). It pulls `hono` / `@hono/node-server` for Node↔Web Request conversion (`toNodeHandler`).
+4. **Render Blueprint lives at repo root** (`render.yaml`) because Render’s Deploy button only reads that path. `deploy/render.yaml` points at it. Fly: `deploy/fly.toml`. Cloudflare Containers: `deploy/cloudflare/` (native modules; drop if they fail to load).
+5. **Quick tunnels do not support SSE** (Cloudflare docs). MCP POST still works. Gemini Spark sometimes opens a GET SSE stream; if that fails on a quick tunnel, use Render/Fly. `cloudflared` is Apache-2.0; `coursecopilot tunnel` downloads it from GitHub Releases when missing.
+6. **HTTP e2e is in vitest** (`test/e2e/http.test.ts`), so the existing 6-job CI matrix runs it. Live claude.ai / ChatGPT / Gemini Spark connections remain M12.
+7. **`search` / `fetch`.** OpenAI’s documented shapes ([MCP search/fetch](https://developers.openai.com/api/docs/mcp)): `search({query}) → {results:[{id,title,url}]}` and `fetch({id}) → {id,title,text,url,metadata?}`. Thin aliases over `search_course` / `get_chunk` (`id` is the chunk id as a string).
+8. **Local paths default off on HTTP.** `--allow-path` / `COURSECOPILOT_ALLOW_PATH=1` re-enables file/folder ingest and local `kind: transcript` paths. YouTube URLs and `http(s)` transcripts still work. SSRF guard (`src/util/ssrf.ts`) rejects private/loopback/link-local/metadata hostnames on `http(s)` URIs in `add_source` without DNS; crawl-time DNS rebinding stays M4.
+9. **When `PORT` is set** (Render/Fly), `--bind` defaults to `0.0.0.0` and Host-header allowlisting is skipped (any Host). Localhost binds allow `localhost` / `127.0.0.1` / `[::1]` plus `*.trycloudflare.com`.
+10. **Shared `AppContext`.** HTTP creates one `AppContext` (ingest queue, hybrid search, `LearnService`) and a fresh `McpServer` per request, so M5 YouTube/transcript kinds and M8 quiz/mastery tools are on the same Streamable HTTP surface as `search`/`fetch`.

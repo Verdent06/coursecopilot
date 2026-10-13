@@ -1,0 +1,31 @@
+# Render Blueprint. Repo-root path is required for the Deploy to Render button.
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: coursecopilot
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: COURSECOPILOT_HOME
+        value: /data
+      - key: HF_HOME
+        value: /data/hf
+      - key: PORT
+        value: "8787"
+      - key: COURSECOPILOT_TOKEN
+        generateValue: true
+      - key: COURSECOPILOT_SECRET_PATH
+        generateValue: true
+      - key: COURSECOPILOT_BIND
+        value: "0.0.0.0"
+      - key: CANVAS_TOKEN
+        sync: false
+      - key: CANVAS_BASE_URL
+        sync: false
+    disk:
+      name: coursecopilot-data
+      mountPath: /data
+      sizeGB: 2

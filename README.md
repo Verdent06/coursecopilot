@@ -4,7 +4,7 @@ Your classes, inside the AI you already use. Open-source MCP connector that turn
 
 No API key. The host AI does all generation; this server fetches, indexes, retrieves, and stores learning state.
 
-**Status:** milestones M0–M3 (scaffold, database, files, hybrid search), **M5 (YouTube captions + VTT/SRT)**, and **M8 (learning layer)** are implemented. Website crawl, Canvas, packs, and remote HTTP land in other milestones — see [docs/SPEC.md](docs/SPEC.md).
+**Status:** M0–M3 (scaffold, database, files pipeline, hybrid search), **M5 (YouTube captions + VTT/SRT)**, **M8 (learning layer)**, and **M9 (remote / HTTP mode)** are implemented. Website crawl, Canvas, and packs land in other milestones — see [docs/SPEC.md](docs/SPEC.md).
 
 ## Requirements
 
@@ -33,7 +33,24 @@ npx @modelcontextprotocol/inspector node dist/cli.js
 
 Data lives in `~/.coursecopilot/cc.db` (override with `COURSECOPILOT_HOME`).
 
-## Tools (M0–M3, M5, M8)
+## Remote mode (claude.ai, ChatGPT, Gemini app)
+
+Those clients connect from the vendor's cloud, so the server must be public HTTPS.
+
+```bash
+node dist/cli.js serve --http --port 8787
+node dist/cli.js tunnel          # Cloudflare quick tunnel (hostname changes each run)
+```
+
+Auth: secret URL path `/mcp/<token>` (claude.ai / ChatGPT no-auth), `Authorization: Bearer` (Cursor / Claude Code / Gemini CLI), and **single-user OAuth 2.1 + DCR** (required for Gemini Spark).
+
+One-click always-on: [Deploy to Render](https://render.com/deploy?repo=https://github.com/Verdent06/coursecopilot) · `deploy/fly.toml` · `deploy/cloudflare/`.
+
+Exact click paths, official-doc citations, and plan/eligibility gates: **[docs/remote.md](docs/remote.md)**.
+
+ChatGPT support needs a plan with developer mode — check [OpenAI's page](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt). Gemini app custom apps need Spark, a personal US Google account, 18+, English, Keep Activity on; school accounts should use Gemini CLI instead.
+
+## Tools (M0–M3, M5, M8, M9)
 
 | Tool | Role |
 |---|---|
@@ -47,6 +64,7 @@ Data lives in `~/.coursecopilot/cc.db` (override with `COURSECOPILOT_HOME`).
 | `remove_source` | Delete a source and its chunks |
 | `search_course` | Hybrid keyword + vector search with citations (page, slide, or `youtu.be/ID?t=Ns`) |
 | `get_chunk` / `get_document` | Fetch a cited chunk (plus neighbors) or a full document |
+| `search` / `fetch` | ChatGPT-compatible aliases of search_course / get_chunk |
 | `get_course_outline` | Documents, lectures, topics |
 | `set_topics` | Host-labeled topics bound to chunks/keywords |
 | `generate_quiz_context` | Grounded chunks + instructions so the **host AI** writes questions (no server LLM) |
@@ -65,7 +83,7 @@ Transcripts: `kind: "transcript"` with a local `.vtt`/`.srt` path or an `http(s)
 ## Develop
 
 ```bash
-npm test          # unit + e2e stdio (builds dist/ if needed)
+npm test          # unit + e2e stdio + e2e HTTP (builds dist/ if needed)
 npm run typecheck
 npm run lint
 ```

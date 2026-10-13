@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.github
+coverage
+tmp
+.coursecopilot
+*.db
+*.log
+test
+docs
+.vitest
+.env
+.env.*

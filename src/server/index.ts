@@ -17,6 +17,7 @@ import { registerMasteryResource } from "./resources/mastery.js";
 import { registerOutlineResource } from "./resources/outline.js";
 import { registerAddCourse } from "./tools/add_course.js";
 import { registerAddSource } from "./tools/add_source.js";
+import { registerFetch } from "./tools/fetch.js";
 import { registerGenerateQuizContext } from "./tools/generate_quiz_context.js";
 import { registerGetChunk } from "./tools/get_chunk.js";
 import { registerGetCourseOutline } from "./tools/get_course_outline.js";
@@ -29,9 +30,19 @@ import { registerListSources } from "./tools/list_sources.js";
 import { registerPing } from "./tools/ping.js";
 import { registerRecordQuizAttempt } from "./tools/record_quiz_attempt.js";
 import { registerRemoveSource } from "./tools/remove_source.js";
+import { registerSearch } from "./tools/search.js";
 import { registerSearchCourse } from "./tools/search_course.js";
 import { registerSetExam } from "./tools/set_exam.js";
 import { registerSetTopics } from "./tools/set_topics.js";
+
+export type AppContext = {
+  opened: OpenedDatabase;
+  repo: CourseRepo;
+  queue: IngestQueue;
+  search: HybridSearch;
+  learn: LearnService;
+  allowLocalPaths: boolean;
+};
 
 export type CreateServerOptions = {
   dbPath?: string;
@@ -42,19 +53,28 @@ export type CreateServerOptions = {
   embedder?: Embedder | null;
   /** Injected clock (tests). */
   now?: () => Date;
+  /** Reuse a long-lived context (HTTP: one ctx, fresh McpServer per request). */
+  ctx?: AppContext;
 };
 
-export function createServer(options: CreateServerOptions = {}): McpServer {
+export function createAppContext(options: CreateServerOptions = {}): AppContext {
   const opened = options.opened ?? openDatabase({ path: options.dbPath });
   const repo = new CourseRepo(opened.db);
   const embedder = options.embedder === undefined ? createDefaultEmbedder() : options.embedder;
+  const allowLocalPaths = options.allowLocalPaths ?? true;
   const queue = new IngestQueue({
     repo,
-    allowLocalPaths: options.allowLocalPaths ?? true,
+    allowLocalPaths,
     embedder,
   });
   const search = new HybridSearch(repo, embedder, opened.vecEnabled);
   const learn = new LearnService(repo, search, embedder, options.now);
+  return { opened, repo, queue, search, learn, allowLocalPaths };
+}
+
+export function createServer(options: CreateServerOptions = {}): McpServer {
+  const ctx = options.ctx ?? createAppContext(options);
+  const { repo, queue, search, learn, allowLocalPaths } = ctx;
 
   const server = new McpServer({
     name: SERVER_NAME,
@@ -67,13 +87,15 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
   registerAddCourse(server, repo);
   registerListCourses(server, repo);
   registerSetExam(server, repo);
-  registerAddSource(server, repo, queue);
+  registerAddSource(server, repo, queue, { allowLocalPaths });
   registerGetIngestStatus(server, repo);
   registerListSources(server, repo);
   registerRemoveSource(server, repo);
   registerSearchCourse(server, search);
   registerGetChunk(server, search);
   registerGetDocument(server, search);
+  registerSearch(server, search);
+  registerFetch(server, search);
   registerGetCourseOutline(server, learn);
   registerSetTopics(server, learn);
   registerGenerateQuizContext(server, learn);

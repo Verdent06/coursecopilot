@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "coursecopilot",
+  "compatibility_date": "2026-10-13",
+  "containers": [
+    {
+      "class_name": "CourseCopilot",
+      "image": "../../Dockerfile",
+      "max_instances": 1
+    }
+  ]
+}
