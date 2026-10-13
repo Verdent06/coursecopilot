@@ -108,7 +108,9 @@ export async function ingestFileSource(
 
     try {
       const bytes = new Uint8Array(readFileSync(filePath));
-      const extracted = await extractBytes(kind, bytes, fileUri, filePath);
+      const extracted = await extractBytes(kind, bytes, fileUri, filePath, {
+        asSlides: asSlidesFromConfig(source.config_json),
+      });
       if (lectureNo != null) {
         extracted.meta.lecture_no = lectureNo;
       }
@@ -153,9 +155,10 @@ async function extractBytes(
   bytes: Uint8Array,
   fileUri: string,
   filePath: string,
+  options: { asSlides?: boolean } = {},
 ): Promise<ExtractedDocument> {
   if (kind === "pdf") {
-    return extractPdf(bytes, fileUri, filePath);
+    return extractPdf(bytes, fileUri, filePath, { asSlides: options.asSlides });
   }
   if (kind === "pptx") {
     return extractPptx(bytes, fileUri, filePath);
@@ -165,6 +168,18 @@ async function extractBytes(
     return extractMarkdown(content, fileUri, filePath);
   }
   return extractPlainText(content, fileUri, filePath, mimeForPath(filePath) ?? "text/plain");
+}
+
+function asSlidesFromConfig(configJson: string | null): boolean | undefined {
+  if (!configJson) {
+    return undefined;
+  }
+  try {
+    const parsed = JSON.parse(configJson) as { as_slides?: unknown };
+    return typeof parsed.as_slides === "boolean" ? parsed.as_slides : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function lectureNoFromConfig(configJson: string | null): number | undefined {

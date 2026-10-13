@@ -34,6 +34,10 @@ export const addSourceInputSchema = z.object({
       max_pages: z.number().optional().describe("Website page cap (M4)"),
       include_prefix: z.string().optional().describe("Website path prefix (M4)"),
       lecture_no: z.number().optional().describe("Optional lecture number stored on documents"),
+      as_slides: z
+        .boolean()
+        .optional()
+        .describe("Treat PDF pages as slides so citations use 'slide N' instead of 'p. N'"),
     })
     .optional(),
 });

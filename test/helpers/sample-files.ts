@@ -2,8 +2,26 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import JSZip from "jszip";
 
+/** Golden retrieval target: lec07.pdf page/slide 14 (spec M3). */
+export const LEC07_PAGES: string[] = [
+  "Lecture 7: Nonregular languages. Course EECS 376.",
+  "Review of regular languages and deterministic finite automata.",
+  "NFAs and the subset construction.",
+  "Regular expressions and their equivalence with finite automata.",
+  "Closure properties of regular languages: union, concatenation, star.",
+  "Decision procedures for emptiness and equivalence of automata.",
+  "The pumping lemma: if L is regular, there exists p such that any string s in L with |s| >= p can be divided into xyz.",
+  "How to pick a pumping length. Examples with simple regular languages.",
+  "Common mistakes when applying the pumping lemma.",
+  "Myhill-Nerode as another way to prove nonregularity.",
+  "Context-free languages preview for next week.",
+  "Homework hints for problem set 4 on automata.",
+  "Office hours reminder and exam logistics for next Tuesday.",
+  "Proof that a^n b^n is not regular. Assume for contradiction that L = { a^n b^n | n >= 0 } is regular. Let p be the pumping length. Choose s = a^p b^p. The pumping lemma says s = xyz with |xy| <= p and |y| >= 1, and xy^k z in L for all k. Pumping y, which lies entirely in the a's, yields a string that is not in L. Therefore L is not regular.",
+];
+
 /** Build a minimal PDF 1.4 with Helvetica text, one page per string. */
-export function buildSimplePdf(pages: string[]): Buffer {
+export function buildSimplePdf(pages: string[], opts: { landscape?: boolean } = {}): Buffer {
   if (pages.length < 1) {
     throw new Error("PDF needs at least one page");
   }
@@ -11,6 +29,9 @@ export function buildSimplePdf(pages: string[]): Buffer {
   const pageIds = Array.from({ length: n }, (_, i) => 3 + i);
   const contentIds = Array.from({ length: n }, (_, i) => 3 + n + i);
   const fontId = 3 + 2 * n;
+  const pageWidth = opts.landscape ? 720 : 612;
+  const pageHeight = opts.landscape ? 540 : 792;
+  const mediaBox = `[0 0 ${pageWidth} ${pageHeight}]`;
 
   const objects: string[] = [];
   objects.push("<< /Type /Catalog /Pages 2 0 R >>");
@@ -19,11 +40,11 @@ export function buildSimplePdf(pages: string[]): Buffer {
   );
   for (let i = 0; i < n; i++) {
     objects.push(
-      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents ${contentIds[i]} 0 R /Resources << /Font << /F1 ${fontId} 0 R >> >> >>`,
+      `<< /Type /Page /Parent 2 0 R /MediaBox ${mediaBox} /Contents ${contentIds[i]} 0 R /Resources << /Font << /F1 ${fontId} 0 R >> >> >>`,
     );
   }
   for (const page of pages) {
-    const stream = pageContentStream(page);
+    const stream = pageContentStream(page, pageHeight);
     const len = Buffer.byteLength(stream, "latin1");
     objects.push(`<< /Length ${len} >>\nstream\n${stream}\nendstream`);
   }
@@ -44,14 +65,15 @@ export function buildSimplePdf(pages: string[]): Buffer {
   return Buffer.from(body + xref + trailer, "latin1");
 }
 
-function pageContentStream(text: string): string {
+function pageContentStream(text: string, pageHeight: number): string {
   const lines = text.split("\n");
+  const startY = Math.max(72, pageHeight - 72);
   const ops = lines.map((line, i) => {
     const escaped = line.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
     const tj = `(${escaped}) Tj`;
     return i === 0 ? tj : `0 -16 Td ${tj}`;
   });
-  return `BT /F1 12 Tf 72 720 Td\n${ops.join("\n")}\nET`;
+  return `BT /F1 12 Tf 72 ${startY} Td\n${ops.join("\n")}\nET`;
 }
 
 export type SampleSlide = {
@@ -196,13 +218,7 @@ export async function writeSampleFolder(dir: string): Promise<{
   const pptx = join(dir, "lec07.pptx");
   const md = join(dir, "notes.md");
   const txt = join(dir, "sub", "office-hours.txt");
-  writeFileSync(
-    pdf,
-    buildSimplePdf([
-      "Lecture 7: Nonregular languages",
-      "The pumping lemma: if L is regular, there exists p such that any string s in L with |s| >= p can be divided into xyz.",
-    ]),
-  );
+  writeFileSync(pdf, buildSimplePdf(LEC07_PAGES, { landscape: true }));
   writeFileSync(
     pptx,
     await buildSimplePptx([
