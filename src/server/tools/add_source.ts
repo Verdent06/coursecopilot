@@ -1,6 +1,9 @@
 import { statSync } from "node:fs";
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
+import { loadCanvasCredentials } from "../../canvas/auth.js";
+import { CANVAS_ERROR, canvasErrorPayload } from "../../canvas/errors.js";
+import { canvasCourseUri, parseCanvasCourseId } from "../../canvas/uri.js";
 import { type CourseRepo, RepoError, type SourceKind } from "../../db/repo.js";
 import { parseLeccapUrl } from "../../ingest/providers/leccap/parse.js";
 import type { IngestQueue } from "../../ingest/queue.js";
@@ -8,15 +11,11 @@ import { parseYoutubeUrl } from "../../ingest/youtube/parse.js";
 import { assertExists, resolveLocalPath } from "../../util/files.js";
 import { newId } from "../../util/ids.js";
 import { assertPublicUrl } from "../../util/ssrf.js";
-import { fail, ok } from "../tool-result.js";
-
-const KIND_MILESTONE: Record<string, string> = {
-  canvas: "Canvas ingestion is not implemented yet (milestone M6)",
-};
+import { fail, failData, ok } from "../tool-result.js";
 
 /**
  * Enqueue a source for ingestion. Website, file, folder, youtube, transcript,
- * and leccap kinds are implemented. Returns a job_id immediately so the host can
+ * canvas, and leccap kinds are implemented. Returns a job_id immediately so the host can
  * poll get_ingest_status.
  */
 export const addSourceInputSchema = z.object({
@@ -24,7 +23,7 @@ export const addSourceInputSchema = z.object({
   kind: z
     .enum(["website", "file", "folder", "youtube", "transcript", "canvas", "leccap"])
     .describe(
-      "Source type. website, file, folder, youtube, transcript, and leccap are implemented.",
+      "Source type. website, file, folder, youtube, transcript, canvas (read-only), and leccap are implemented.",
     ),
   uri: z
     .string()
@@ -72,7 +71,7 @@ export function registerAddSource(
     {
       title: "Add source",
       description:
-        "Enqueue a course source for ingestion. website crawls a public course site (robots, same-site scope, linked PDFs/PPTX). File/folder index local PDF, PPTX, Markdown, and TXT. youtube fetches captions (timestamps + youtu.be deep links). transcript indexes a local or remote VTT/SRT. leccap indexes UMich CAEN Lecture Capture (sign in first with `coursecopilot login leccap`). Returns a job_id; poll get_ingest_status.",
+        "Enqueue a course source for ingestion. website crawls a public course site (robots, same-site crawl, linked PDFs/PPTX). File/folder index local PDF, PPTX, Markdown, and TXT. youtube fetches captions (timestamps + youtu.be deep links). transcript indexes a local or remote VTT/SRT. canvas (uri canvas://course/<id>) ingests pages, files, modules, assignments, and announcements with a local Canvas token. leccap indexes UMich CAEN Lecture Capture (sign in first with `coursecopilot login leccap`). Returns a job_id; poll get_ingest_status.",
       inputSchema: addSourceInputSchema,
       outputSchema: addSourceOutputSchema,
       annotations: {
@@ -86,10 +85,6 @@ export function registerAddSource(
       try {
         if (/^https?:\/\//i.test(uri) && !allowPrivateNetwork) {
           assertPublicUrl(uri);
-        }
-        const pending = KIND_MILESTONE[kind];
-        if (pending) {
-          return fail(pending);
         }
         if (kind === "website") {
           let parsed: URL;
@@ -126,6 +121,20 @@ export function registerAddSource(
             );
           }
         }
+        let storedUri = uri;
+        if (kind === "canvas") {
+          const canvasId = parseCanvasCourseId(uri);
+          if (!canvasId) {
+            throw new RepoError(
+              `Canvas URI must be canvas://course/<id> (got "${uri}"). Example: canvas://course/12345`,
+            );
+          }
+          storedUri = canvasCourseUri(canvasId);
+          if (!loadCanvasCredentials()) {
+            const payload = canvasErrorPayload(CANVAS_ERROR.notConfigured);
+            return failData(payload, payload.fallback);
+          }
+        }
         if (kind === "transcript") {
           if (!/^https?:\/\//i.test(uri)) {
             if (!allowLocalPaths) {
@@ -143,7 +152,7 @@ export function registerAddSource(
             }
           }
         }
-        let sourceUri = uri;
+        let sourceUri = storedUri;
         if (kind === "leccap") {
           const parsed = parseLeccapUrl(uri);
           if (!parsed) {

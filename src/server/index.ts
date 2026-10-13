@@ -1,4 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/server";
+import type { CanvasClient } from "../canvas/client.js";
+import type { CanvasRuntime } from "../canvas/tools.js";
 import { type OpenedDatabase, openDatabase } from "../db/migrate.js";
 import { CourseRepo } from "../db/repo.js";
 import type { FetchLike } from "../ingest/crawl/fetch.js";
@@ -17,6 +19,7 @@ import { registerExplainWithSources } from "./prompts/explain_with_sources.js";
 import { registerQuizMe } from "./prompts/quiz_me.js";
 import { registerQuizMeOnMisses } from "./prompts/quiz_me_on_misses.js";
 import { registerStudySession } from "./prompts/study_session.js";
+import { registerWhatsDue } from "./prompts/whats_due.js";
 import { registerCoursesResource } from "./resources/courses.js";
 import { registerDocumentResource } from "./resources/document.js";
 import { registerMasteryResource } from "./resources/mastery.js";
@@ -24,6 +27,13 @@ import { registerOutlineResource } from "./resources/outline.js";
 import { registerAddCourse } from "./tools/add_course.js";
 import { registerAddPack } from "./tools/add_pack.js";
 import { registerAddSource } from "./tools/add_source.js";
+import { registerCanvasGetPage } from "./tools/canvas_get_page.js";
+import { registerCanvasListAnnouncements } from "./tools/canvas_list_announcements.js";
+import { registerCanvasListAssignments } from "./tools/canvas_list_assignments.js";
+import { registerCanvasListCourses } from "./tools/canvas_list_courses.js";
+import { registerCanvasListFiles } from "./tools/canvas_list_files.js";
+import { registerCanvasListModules } from "./tools/canvas_list_modules.js";
+import { registerCanvasListPages } from "./tools/canvas_list_pages.js";
 import { registerExportPack } from "./tools/export_pack.js";
 import { registerFetch } from "./tools/fetch.js";
 import { registerGenerateQuizContext } from "./tools/generate_quiz_context.js";
@@ -54,6 +64,7 @@ export type AppContext = {
   packs: PackService;
   allowLocalPaths: boolean;
   allowPrivateNetwork: boolean;
+  canvas: CanvasRuntime;
 };
 
 export type CreateServerOptions = {
@@ -74,6 +85,9 @@ export type CreateServerOptions = {
   fetchFn?: FetchLike;
   registryUrl?: string;
   homeDir?: string;
+  /** Injected Canvas client / fetch (tests). */
+  canvas?: CanvasClient;
+  canvasFetch?: FetchLike;
 };
 
 export function createAppContext(options: CreateServerOptions = {}): AppContext {
@@ -83,6 +97,10 @@ export function createAppContext(options: CreateServerOptions = {}): AppContext 
   const allowLocalPaths = options.allowLocalPaths ?? true;
   const allowPrivateNetwork = options.allowPrivateNetwork ?? true;
   const homeDir = options.homeDir ?? getHomeDir();
+  const canvas: CanvasRuntime = {
+    client: options.canvas,
+    fetchFn: options.canvasFetch,
+  };
   const queue = new IngestQueue({
     repo,
     allowLocalPaths,
@@ -91,6 +109,8 @@ export function createAppContext(options: CreateServerOptions = {}): AppContext 
     crawlDelayMs: options.crawlDelayMs,
     fetchFn: options.fetchFn,
     youtube: options.youtube,
+    canvas: options.canvas,
+    canvasFetch: options.canvasFetch,
     onSourceDone: async (_sourceId, courseId) => {
       applyInstalledPackTopics(repo, courseId);
     },
@@ -106,12 +126,22 @@ export function createAppContext(options: CreateServerOptions = {}): AppContext 
     fetchFn: options.fetchFn,
     homeDir,
   });
-  return { opened, repo, queue, search, learn, packs, allowLocalPaths, allowPrivateNetwork };
+  return {
+    opened,
+    repo,
+    queue,
+    search,
+    learn,
+    packs,
+    allowLocalPaths,
+    allowPrivateNetwork,
+    canvas,
+  };
 }
 
 export function createServer(options: CreateServerOptions = {}): McpServer {
   const ctx = options.ctx ?? createAppContext(options);
-  const { repo, queue, search, learn, packs, allowLocalPaths, allowPrivateNetwork } = ctx;
+  const { repo, queue, search, learn, packs, allowLocalPaths, allowPrivateNetwork, canvas } = ctx;
 
   const server = new McpServer({
     name: SERVER_NAME,
@@ -149,6 +179,14 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
   registerExamPrep(server);
   registerExplainWithSources(server);
   registerAddMyCourse(server);
+  registerWhatsDue(server);
+  registerCanvasListCourses(server, repo, canvas);
+  registerCanvasListModules(server, canvas);
+  registerCanvasListFiles(server, canvas);
+  registerCanvasListPages(server, canvas);
+  registerCanvasGetPage(server, canvas);
+  registerCanvasListAssignments(server, canvas);
+  registerCanvasListAnnouncements(server, canvas);
   registerCoursesResource(server, repo);
   registerDocumentResource(server, repo, search);
   registerOutlineResource(server, repo, learn);

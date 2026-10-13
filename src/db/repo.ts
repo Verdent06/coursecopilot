@@ -388,6 +388,19 @@ export class CourseRepo {
       );
   }
 
+  findLinkedCourseByCanvasId(canvasCourseId: string): string | undefined {
+    const uri = `canvas://course/${canvasCourseId}`;
+    const row = this.db
+      .prepare(
+        `SELECT course_id FROM sources
+         WHERE kind = 'canvas' AND (uri = ? OR uri = ?)
+         ORDER BY last_synced_at DESC, id DESC
+         LIMIT 1`,
+      )
+      .get(uri, canvasCourseId) as { course_id: string } | undefined;
+    return row?.course_id;
+  }
+
   listSources(courseId: string): SourceListItem[] {
     this.requireCourse(courseId);
     return this.db

@@ -120,10 +120,14 @@ describe("citations", () => {
       doc_title: "Module 3 reading",
       doc_url: "https://umich.instructure.com/courses/1/pages/x",
       heading_path: null,
-      locator: { url: "https://umich.instructure.com/courses/1/pages/x", title: "Week 3" },
+      locator: {
+        url: "https://umich.instructure.com/courses/1/pages/x",
+        title: "Module 3 reading",
+        canvas: { course_id: 1, item_type: "page", item_id: "x", module: "Week 3" },
+      },
     });
     expect(canvas.kind).toBe("canvas");
-    expect(canvas.label).toMatch(/^\[Canvas · /);
+    expect(canvas.label).toBe("[Canvas · Week 3 · Module 3 reading]");
 
     const file = buildCitation({
       ...base,

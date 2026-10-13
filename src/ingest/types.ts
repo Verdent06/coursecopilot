@@ -13,6 +13,12 @@ export type Locator = {
   recording_id?: string;
   /** Matched course PDF/PPTX filename when OCR text aligned with an ingested slide. */
   pdf_title?: string;
+  canvas?: {
+    course_id: number | string;
+    item_type: string;
+    item_id: number | string;
+    module?: string;
+  };
 };
 
 export type ExtractedSegment = {

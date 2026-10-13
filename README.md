@@ -4,7 +4,7 @@ Your classes, inside the AI you already use. Open-source MCP connector that turn
 
 No API key. The host AI does all generation; this server fetches, indexes, retrieves, and stores learning state.
 
-**Status:** M0–M5 (scaffold, database, files, hybrid search, website crawler, YouTube captions + VTT/SRT), **M7 (course packs)**, **M8 (learning layer)**, **M9 (remote / HTTP mode)**, **M11 (in-repo pack registry + starter packs)**, and **UMich CAEN Lecture Capture (`leccap`)** are implemented. Canvas lands in M6 — see [docs/SPEC.md](docs/SPEC.md).
+**Status:** M0–M6 (scaffold, database, files, hybrid search, website crawler, YouTube captions + VTT/SRT, **Canvas read-only**), **M7 (course packs)**, **M8 (learning layer)**, **M9 (remote / HTTP mode)**, **M11 (in-repo pack registry + starter packs)**, and **UMich CAEN Lecture Capture (`leccap`)** are implemented. See [docs/SPEC.md](docs/SPEC.md).
 
 ## Requirements
 
@@ -67,7 +67,19 @@ Registry (in this repo, cached 24h): `COURSECOPILOT_PACK_REGISTRY` or the defaul
 
 Starter packs (open courses only): `harvard-cs50x`, `harvard-cs50p`, `mit-6.006-s20`, `mit-6.042j-f10`, `mit-18.06-s10`, `mit-6.045j-s11`, `mit-6.0001-f16`, `mit-6.034-f10`, `mit-missing-semester`, `stanford-cs229`, `stanford-cs231n`, `berkeley-cs61a`, `cmu-15-445-f25`, `3b1b-linear-algebra`, `umich-eecs376`.
 
-## Tools (M0–M5, M7–M9)
+## Connect Canvas
+
+```bash
+npx coursecopilot canvas connect
+```
+
+Enter your instance URL (any school: `https://umich.instructure.com`, …) and a personal access token from **Account → Settings → Approved Integrations**. The token is stored in `~/.coursecopilot/secrets.json` (mode 0600) or `CANVAS_BASE_URL` / `CANVAS_TOKEN`. It is **never** written to the database, packs, logs, or client MCP configs.
+
+Read-only: courses, files, modules, pages, assignments + due dates, announcements. `add_source` `kind: "canvas"` `uri: "canvas://course/<id>"` indexes pages/files/assignment text. Prompt: `whats_due`.
+
+**If your school blocks tokens** (no “+ New Access Token” button, or `tokens_blocked`): use a public course website, a pack, or download files and add a folder. Details: [docs/canvas.md](docs/canvas.md).
+
+## Tools (M0–M11)
 
 | Tool | Role |
 |---|---|
@@ -75,7 +87,9 @@ Starter packs (open courses only): `harvard-cs50x`, `harvard-cs50p`, `mit-6.006-
 | `add_course` | Create a course |
 | `list_courses` | List courses, source/chunk counts, exams |
 | `set_exam` | Add or replace an exam date |
-| `add_source` | Enqueue a source. `website` (robots, same-site crawl, linked PDFs/PPTX), `file`/`folder` (PDF, PPTX, Markdown, TXT), `youtube` (captions with timestamps), `transcript` (VTT/SRT), `leccap` (UMich CAEN Lecture Capture). Canvas lands later. |
+| `add_source` | Enqueue a source. `website` (robots, same-site crawl, linked PDFs/PPTX), `file`/`folder` (PDF, PPTX, Markdown, TXT), `youtube` (captions with timestamps), `transcript` (VTT/SRT), `canvas` (`canvas://course/<id>`, local token only), `leccap` (UMich CAEN Lecture Capture). |
+| `canvas_list_courses` / `_modules` / `_files` / `_pages` / `canvas_get_page` | Live Canvas reads (files fall back to module items on 403) |
+| `canvas_list_assignments` / `canvas_list_announcements` | Live due dates and announcements (short cache) |
 | `get_ingest_status` | Poll an ingest job (`docs`, `chunks`, `skipped`) |
 | `list_sources` | List sources on a course |
 | `sync_course` | Incremental re-fetch (unchanged documents skip re-embedding) |
@@ -95,7 +109,7 @@ Starter packs (open courses only): `harvard-cs50x`, `harvard-cs50p`, `mit-6.006-
 
 Resources: `coursecopilot://courses`, `coursecopilot://document/{id}`, `coursecopilot://course/{id}/outline`, `coursecopilot://course/{id}/mastery`
 
-Prompts: `quiz_me_on_misses` (plus `quiz_me`, `study_session`, `exam_prep`, `explain_with_sources`, `add_my_course`).
+Prompts: `quiz_me_on_misses`, `quiz_me`, `study_session`, `exam_prep`, `explain_with_sources`, `add_my_course`, `whats_due`.
 
 YouTube: `add_source` with `kind: "youtube"` and a watch, youtu.be, shorts, embed, or playlist URL. Captions are fetched (English manual, then English auto, then any language). If scraping fails, `yt-dlp` (if on PATH) and then an Internet Archive `youtube-<id>` VTT mirror are tried. Videos without captions are skipped with a pointer to export a VTT/SRT (or v1.1 Whisper). Playlists expand up to 50 videos.
 

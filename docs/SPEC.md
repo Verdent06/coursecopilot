@@ -913,3 +913,24 @@ Chosen while implementing the in-repo pack registry.
 2. **Contribution.** PR-based via `CONTRIBUTING-packs.md`. `npm run packs:index` regenerates the catalog; CI fails if the committed index is stale.
 3. **CI.** A blocking job validates every pack against the schema (id/filename, http(s) only, no embedded content, unique ids). A separate non-blocking job HEADs/GETs source URLs and warns on 4xx without failing the workflow.
 4. **Starter packs.** 10–20 openly available courses only. Topic maps are taken from each course's published lecture list. UMich EECS 376 lists only public `eecs376.org` / notes URLs plus `connect_yourself` placeholders for leccap and Canvas.
+
+---
+
+## 32. Spec amendments (M6)
+
+Chosen while implementing read-only Canvas.
+
+1. **No schema bump from Canvas.** `kind='canvas'` already exists. Locators store `{url, canvas:{course_id,item_type,item_id,module?}, page?}`. `schema_version` stays **3** (leccap / packs / M11). The token is never a column or `config_json` field.
+2. **Secrets.** `CANVAS_BASE_URL` + `CANVAS_TOKEN` override `~/.coursecopilot/secrets.json` (`{"canvas":{"base_url","token"}}`, written `0600`). `coursecopilot canvas connect [--base-url --token --yes]` validates `GET /api/v1/users/self` then writes the file. Logs redact `Authorization`, `Bearer`, and `CANVAS_TOKEN`.
+3. **Structured Canvas errors.** Live tools return `isError` plus `{error:'canvas_not_configured'|'token_rejected'|'tokens_blocked', fallback}` (`failData`). 401 on `/users/self` is `token_rejected`. 403 on `/users/self` or a body that says personal access tokens are disabled is `tokens_blocked`. A 403 on `/courses/:id/files` is **not** that — it falls back to module File items.
+4. **MCP structured wrappers.** Same as other list tools: `{courses}`, `{modules}`, `{files}`, `{pages}`, `{assignments}`, `{announcements}`. Assignments include `due_at` (ISO) and `due_at_local` (user `time_zone` from `/users/self`).
+5. **URI.** Stored as `canvas://course/<id>`. `add_source` also accepts a bare numeric id or an `https://…/courses/<id>` URL and normalizes it. Missing credentials fail the tool call immediately with `canvas_not_configured` (no source row).
+6. **Ingest.** Front page, pages (HTML through `extractHtml` / the crawler chunker), files (PDF/PPTX/MD/TXT via the M2 extractors; media comments skipped), assignment descriptions, announcements. Locked modules/items skipped. LTI/ExternalTool skipped with the VTT/transcript fallback. ExternalUrl is reported, not crawled. Midterm/Exam/Final assignment due dates (and assignment-group weights) are `suggestedExams` only.
+7. **Citations.** `source_kind === 'canvas'` or `locator.canvas` yields `[Canvas · <module> · <item> · p. N]`. PDF/PPTX MIME still drives `kind`/`#page=N` so a Canvas-hosted deck keeps slide locators.
+8. **Live cache.** In-process TTL 30s on course/module/file/page/announcement lists. Assignments are fetched fresh enough for due dates (still TTL-keyed per course).
+9. **Tests use a local mock, not MSW.** `test/helpers/fake-canvas.ts` is a fetch mock and a Node HTTP server (same fixture). No extra dependency. A free Instructure teacher account was not used in CI.
+10. **MCPB.** Root `manifest.json` adds optional sensitive `user_config.canvas_base_url` / `canvas_token`, mapped to `CANVAS_*` env. Prefer `canvas connect` so the token is not stored in a client config.
+11. **`whats_due`.** Prompt arguments are strings (same MCP host constraint as M8). Default `days=7`.
+12. **Planner copy.** “Canvas due dates can seed this later” is now “Canvas assignments named Midterm/Exam/Final are suggested after ingest, never auto-set.”
+13. **CLI default command.** `coursecopilot` with no args still starts stdio, but it is a hidden default `stdio` command so `canvas connect`, `add-pack`, and other short-lived subcommands do not also open the MCP stdio loop. `parseAsync` awaits those commands.
+14. **Packs.** `export-pack` continues to drop `kind: canvas` and `canvas://` URIs (M7). The token is never packed. Importers attach Canvas themselves via `canvas connect` + `add_source`. In-repo starter packs (M11) may list Canvas under `connect_yourself` only.
