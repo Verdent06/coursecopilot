@@ -1,4 +1,4 @@
--- CourseCopilot SQLite schema (M1).
+-- CourseCopilot SQLite schema (M2).
 -- Applied by src/db/migrate.ts. Optional sqlite-vec DDL is split at the marker below.
 
 CREATE TABLE IF NOT EXISTS courses(
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS topics(
   id TEXT PRIMARY KEY,
   course_id TEXT,
   name TEXT,
-  origin TEXT CHECK(origin IN ('heuristic','host','user')),
+  origin TEXT CHECK(origin IN ('heuristic','host','user','pack')),
   UNIQUE(course_id, name)
 );
 CREATE TABLE IF NOT EXISTS chunk_topics(
@@ -119,7 +119,17 @@ CREATE TABLE IF NOT EXISTS jobs(
   progress REAL,
   message TEXT,
   started_at TEXT,
-  finished_at TEXT
+  finished_at TEXT,
+  result_json TEXT
+);
+
+CREATE TABLE IF NOT EXISTS packs(
+  id TEXT PRIMARY KEY,
+  course_id TEXT REFERENCES courses(id) ON DELETE CASCADE,
+  version TEXT,
+  origin TEXT,
+  manifest_json TEXT NOT NULL,
+  installed_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS schema_version(v INTEGER);

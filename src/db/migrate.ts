@@ -6,7 +6,7 @@ import Database from "better-sqlite3";
 import { log } from "../util/log.js";
 import { getDbPath } from "../util/paths.js";
 
-const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 const SCHEMA_PATH = join(dirname(fileURLToPath(import.meta.url)), "schema.sql");
 const nodeRequire = createRequire(import.meta.url);
 
@@ -48,12 +48,59 @@ export function migrate(db: Database.Database, vecEnabled: boolean): void {
       log.warn("failed to create chunks_vec virtual table", err);
     }
   }
+  migrateToV2(db);
   const current = db.prepare("SELECT MAX(v) AS v FROM schema_version").get() as {
     v: number | null;
   };
   if (current.v == null || current.v < SCHEMA_VERSION) {
     db.prepare("INSERT INTO schema_version(v) VALUES (?)").run(SCHEMA_VERSION);
   }
+}
+
+/**
+ * Bring a v1 database up to M2: packs table, jobs.result_json, topics.origin 'pack'.
+ * Fresh installs already get these from schema.sql; this path is for existing files.
+ */
+export function migrateToV2(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS packs(
+      id TEXT PRIMARY KEY,
+      course_id TEXT REFERENCES courses(id) ON DELETE CASCADE,
+      version TEXT,
+      origin TEXT,
+      manifest_json TEXT NOT NULL,
+      installed_at TEXT
+    );
+  `);
+
+  const jobCols = db.prepare("PRAGMA table_info(jobs)").all() as Array<{ name: string }>;
+  if (!jobCols.some((c) => c.name === "result_json")) {
+    db.exec("ALTER TABLE jobs ADD COLUMN result_json TEXT");
+  }
+
+  const topicsSql = db.prepare("SELECT sql FROM sqlite_master WHERE name = 'topics'").get() as
+    | { sql: string }
+    | undefined;
+  if (topicsSql?.sql && !topicsSql.sql.includes("'pack'")) {
+    rebuildTopicsOrigin(db);
+  }
+}
+
+function rebuildTopicsOrigin(db: Database.Database): void {
+  db.exec(`
+    PRAGMA foreign_keys = OFF;
+    CREATE TABLE topics_new(
+      id TEXT PRIMARY KEY,
+      course_id TEXT,
+      name TEXT,
+      origin TEXT CHECK(origin IN ('heuristic','host','user','pack')),
+      UNIQUE(course_id, name)
+    );
+    INSERT INTO topics_new(id, course_id, name, origin) SELECT id, course_id, name, origin FROM topics;
+    DROP TABLE topics;
+    ALTER TABLE topics_new RENAME TO topics;
+    PRAGMA foreign_keys = ON;
+  `);
 }
 
 export function isVecEnabled(db: Database.Database): boolean {

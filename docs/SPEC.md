@@ -772,3 +772,21 @@ Chosen while implementing the scaffold. Later milestones should treat these as p
 11. **`better-sqlite3` pin (Node 20).** `better-sqlite3@13` declares `engines.node: ">=22"`, so `npm ci` with `engine-strict=true` fails on Node 20. v13 also dropped the `prebuild-install` script; on Windows, npm 10 (ships with Node 22) then injects an implicit `node-gyp rebuild` that fails on GitHub `windows-latest` (VS 2026, major 18, unknown to node-gyp). **Pin `better-sqlite3@12.9.0`:** last 12.x with prebuilds for both Node 20 (ABI 115) and Node 22 (ABI 127), including `win32-x64`, and an install script that uses `prebuild-install` so Python/VS are not required. Do not bump to 12.10+ (dropped Node 20 prebuilds) or 13 until Node 20 is dropped or v13 ships a working Windows install path. Keep `engines.node: ">=20"` and the CI matrix `{20, 22}`.
 12. **Windows CI image.** Jobs use `windows-2022`, not `windows-latest`. `windows-latest` is Windows Server 2025 + VS 2026; node-gyp cannot detect VS 18, so any native compile (sqlite-vec fallback, missing prebuild) fails even when the toolchain is installed.
 13. **Line endings.** Windows Git checkouts default to CRLF, and Biome then fails `biome check` on every file. `.gitattributes` sets `* text=auto eol=lf`, and Biome `formatter.lineEnding` is `"lf"`.
+
+---
+
+## 23. Spec amendments (M2)
+
+Chosen while implementing the files pipeline.
+
+1. **`schema_version = 2`.** M2 adds the `packs` table, `topics.origin` `'pack'`, and `jobs.result_json`. Existing v1 databases are upgraded in `migrateToV2` (rebuild the `topics` CHECK; `ALTER TABLE jobs ADD COLUMN result_json`). Fresh installs get the new DDL from `schema.sql`.
+2. **`jobs.result_json`.** The spec's `jobs` table has no structured result column. Progress text stays in `message`; `{docs, chunks, skipped}` is persisted in `result_json` so `get_ingest_status` survives a process restart.
+3. **`get_ingest_status` / `list_sources` structured output.** Same as `list_courses`: MCP `structuredContent` is an object, so the tools return `{ jobs: [...] }` and `{ sources: [...] }`.
+4. **Job ids are `job_<ulid>`.** Matches the spec example (`job_01J...`). Source and document ids stay bare ULIDs.
+5. **Unimplemented `add_source` kinds fail the tool call.** `website` (M4), `youtube`/`transcript` (M5), and `canvas` (M6) return `isError` with a milestone message and do not insert a source or job. `file` and `folder` validate that the path is absolute and exists before enqueueing.
+6. **`unpdf` pin (Node 20).** `unpdf@1.8` declares `engines.node: ">=22"`, which fails `npm ci` with `engine-strict=true` on the Node 20 CI jobs. **Pin `unpdf@1.7.0`:** last 1.7.x with no engines constraint; the bundled serverless PDF.js build still polyfills `Promise.withResolvers`. Do not bump to 1.8+ until Node 20 is dropped.
+7. **DOCX is not in M2.** Spec §9.3 lists DOCX as nice-to-have; the M2 milestone list is PDF/PPTX/MD/TXT/folder. `.docx` files in a folder are skipped as `unsupported type`.
+8. **`sync_course` is M4.** M2 does not register it.
+9. **Local-path guard.** `createServer({ allowLocalPaths: false })` rejects file/folder ingest (the M9 `--allow-path` flag). Stdio defaults to allowed. Paths must be absolute (filesystem path or `file://`).
+10. **Folder extras.** Dotfiles, dot-directories, and symlinks are ignored. After 2,000 files the rest of the tree is skipped with one cap reason. Unsupported extensions are skipped, not a job failure. A job with some extracted docs and some read errors is `partial`.
+11. **PPTX fixtures.** Tests generate a minimal OOXML zip (slides + optional notes) rather than committing a PowerPoint binary. PDF fixtures are generated as PDF 1.4 with Helvetica (standard 14) so extraction does not need embedded fonts. Sample text is original, not course content.

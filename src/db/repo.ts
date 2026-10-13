@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { isValidCourseId, nextAvailableSlug, slugifyCourseId } from "../util/ids.js";
+import { nowIso } from "../util/time.js";
 
 export type Exam = {
   name: string;
@@ -29,6 +30,64 @@ export type SetExamInput = {
   date: string;
   topics?: string[];
   weight?: number;
+};
+
+export type SourceKind = "website" | "canvas" | "file" | "folder" | "youtube" | "transcript";
+export type SourceStatus = "queued" | "running" | "done" | "error" | "partial";
+export type JobState = "queued" | "running" | "done" | "error" | "partial";
+
+export type SourceRow = {
+  id: string;
+  course_id: string;
+  kind: SourceKind;
+  uri: string;
+  title: string | null;
+  config_json: string | null;
+  status: SourceStatus;
+  error: string | null;
+  last_synced_at: string | null;
+};
+
+export type SourceListItem = {
+  source_id: string;
+  kind: SourceKind;
+  uri: string;
+  status: SourceStatus;
+  last_synced_at: string | null;
+  doc_count: number;
+};
+
+export type JobRow = {
+  id: string;
+  source_id: string;
+  state: JobState;
+  progress: number | null;
+  message: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  result_json: string | null;
+};
+
+export type IngestStatusRow = {
+  job_id: string;
+  source_id: string;
+  state: JobState;
+  progress: number;
+  message: string;
+  docs: number;
+  chunks: number;
+  skipped: Array<{ url: string; reason: string }>;
+};
+
+export type ChunkRow = {
+  id: number;
+  document_id: string;
+  course_id: string;
+  ord: number;
+  text: string;
+  locator_json: string;
+  heading_path: string | null;
+  token_count: number | null;
 };
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -141,12 +200,327 @@ export class CourseRepo {
     return { exams };
   }
 
+  courseExists(id: string): boolean {
+    return this.exists(id);
+  }
+
+  requireCourse(courseId: string): void {
+    if (!this.exists(courseId)) {
+      throw new RepoError(this.unknownCourseMessage(courseId));
+    }
+  }
+
+  insertSource(input: {
+    id: string;
+    course_id: string;
+    kind: SourceKind;
+    uri: string;
+    title?: string | null;
+    config_json?: string | null;
+    status?: SourceStatus;
+  }): SourceRow {
+    this.requireCourse(input.course_id);
+    this.db
+      .prepare(
+        `INSERT INTO sources(id, course_id, kind, uri, title, config_json, status, error, last_synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
+      )
+      .run(
+        input.id,
+        input.course_id,
+        input.kind,
+        input.uri,
+        input.title ?? null,
+        input.config_json ?? null,
+        input.status ?? "queued",
+      );
+    const row = this.getSource(input.id);
+    if (!row) {
+      throw new RepoError("failed to insert source");
+    }
+    return row;
+  }
+
+  getSource(id: string): SourceRow | undefined {
+    return this.db
+      .prepare(
+        `SELECT id, course_id, kind, uri, title, config_json, status, error, last_synced_at
+         FROM sources WHERE id = ?`,
+      )
+      .get(id) as SourceRow | undefined;
+  }
+
+  updateSource(
+    id: string,
+    patch: {
+      status?: SourceStatus;
+      error?: string | null;
+      last_synced_at?: string | null;
+      title?: string | null;
+    },
+  ): void {
+    const current = this.getSource(id);
+    if (!current) {
+      return;
+    }
+    this.db
+      .prepare(
+        `UPDATE sources SET status = ?, error = ?, last_synced_at = ?, title = ? WHERE id = ?`,
+      )
+      .run(
+        patch.status ?? current.status,
+        patch.error === undefined ? current.error : patch.error,
+        patch.last_synced_at === undefined ? current.last_synced_at : patch.last_synced_at,
+        patch.title === undefined ? current.title : patch.title,
+        id,
+      );
+  }
+
+  listSources(courseId: string): SourceListItem[] {
+    this.requireCourse(courseId);
+    return this.db
+      .prepare(
+        `SELECT
+           s.id AS source_id,
+           s.kind AS kind,
+           s.uri AS uri,
+           s.status AS status,
+           s.last_synced_at AS last_synced_at,
+           (SELECT COUNT(*) FROM documents d WHERE d.source_id = s.id) AS doc_count
+         FROM sources s
+         WHERE s.course_id = ?
+         ORDER BY s.id ASC`,
+      )
+      .all(courseId) as SourceListItem[];
+  }
+
+  removeSource(sourceId: string): { removed_chunks: number } {
+    const source = this.getSource(sourceId);
+    if (!source) {
+      throw new RepoError(`Unknown source_id "${sourceId}"`);
+    }
+    const countRow = this.db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM chunks c
+         JOIN documents d ON d.id = c.document_id
+         WHERE d.source_id = ?`,
+      )
+      .get(sourceId) as { n: number };
+    const removed = countRow.n;
+    this.db
+      .prepare(
+        `DELETE FROM chunk_topics WHERE chunk_id IN (
+           SELECT c.id FROM chunks c
+           JOIN documents d ON d.id = c.document_id
+           WHERE d.source_id = ?
+         )`,
+      )
+      .run(sourceId);
+    this.db.prepare("DELETE FROM jobs WHERE source_id = ?").run(sourceId);
+    this.db.prepare("DELETE FROM sources WHERE id = ?").run(sourceId);
+    return { removed_chunks: removed };
+  }
+
+  insertJob(input: {
+    id: string;
+    source_id: string;
+    state: JobState;
+    progress: number;
+    message: string;
+  }): void {
+    this.db
+      .prepare(
+        `INSERT INTO jobs(id, source_id, state, progress, message, started_at, finished_at, result_json)
+         VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL)`,
+      )
+      .run(input.id, input.source_id, input.state, input.progress, input.message);
+  }
+
+  getJob(id: string): JobRow | undefined {
+    return this.db
+      .prepare(
+        `SELECT id, source_id, state, progress, message, started_at, finished_at, result_json
+         FROM jobs WHERE id = ?`,
+      )
+      .get(id) as JobRow | undefined;
+  }
+
+  updateJob(
+    id: string,
+    patch: {
+      state?: JobState;
+      progress?: number;
+      message?: string;
+      started_at?: string | null;
+      finished_at?: string | null;
+      result_json?: string | null;
+    },
+  ): void {
+    const current = this.getJob(id);
+    if (!current) {
+      return;
+    }
+    this.db
+      .prepare(
+        `UPDATE jobs SET state = ?, progress = ?, message = ?, started_at = ?, finished_at = ?, result_json = ?
+         WHERE id = ?`,
+      )
+      .run(
+        patch.state ?? current.state,
+        patch.progress ?? current.progress,
+        patch.message ?? current.message,
+        patch.started_at === undefined ? current.started_at : patch.started_at,
+        patch.finished_at === undefined ? current.finished_at : patch.finished_at,
+        patch.result_json === undefined ? current.result_json : patch.result_json,
+        id,
+      );
+  }
+
+  listIngestStatus(filter: { job_id?: string; course_id?: string }): IngestStatusRow[] {
+    if (filter.course_id) {
+      this.requireCourse(filter.course_id);
+    }
+    if (filter.job_id) {
+      const job = this.getJob(filter.job_id);
+      if (!job) {
+        throw new RepoError(`Unknown job_id "${filter.job_id}"`);
+      }
+      if (filter.course_id) {
+        const source = this.getSource(job.source_id);
+        if (!source || source.course_id !== filter.course_id) {
+          return [];
+        }
+      }
+      return [this.jobToStatus(job)];
+    }
+    const rows = filter.course_id
+      ? (this.db
+          .prepare(
+            `SELECT j.id, j.source_id, j.state, j.progress, j.message, j.started_at, j.finished_at, j.result_json
+             FROM jobs j
+             JOIN sources s ON s.id = j.source_id
+             WHERE s.course_id = ?
+             ORDER BY j.id ASC`,
+          )
+          .all(filter.course_id) as JobRow[])
+      : (this.db
+          .prepare(
+            `SELECT id, source_id, state, progress, message, started_at, finished_at, result_json
+             FROM jobs ORDER BY id ASC`,
+          )
+          .all() as JobRow[]);
+    return rows.map((row) => this.jobToStatus(row));
+  }
+
+  insertDocument(input: {
+    id: string;
+    source_id: string;
+    course_id: string;
+    url: string | null;
+    title: string | null;
+    mime: string | null;
+    content_hash: string | null;
+    fetched_at: string | null;
+    meta_json: string | null;
+  }): void {
+    this.db
+      .prepare(
+        `INSERT INTO documents(id, source_id, course_id, url, title, mime, content_hash, fetched_at, meta_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        input.id,
+        input.source_id,
+        input.course_id,
+        input.url,
+        input.title,
+        input.mime,
+        input.content_hash,
+        input.fetched_at,
+        input.meta_json,
+      );
+  }
+
+  insertChunks(
+    chunks: Array<{
+      document_id: string;
+      course_id: string;
+      ord: number;
+      text: string;
+      locator_json: string;
+      heading_path: string | null;
+      token_count: number | null;
+    }>,
+  ): void {
+    const stmt = this.db.prepare(
+      `INSERT INTO chunks(document_id, course_id, ord, text, locator_json, heading_path, token_count)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    );
+    const runMany = this.db.transaction((rows: typeof chunks) => {
+      for (const row of rows) {
+        stmt.run(
+          row.document_id,
+          row.course_id,
+          row.ord,
+          row.text,
+          row.locator_json,
+          row.heading_path,
+          row.token_count,
+        );
+      }
+    });
+    runMany(chunks);
+  }
+
+  countDocuments(sourceId: string): number {
+    const row = this.db
+      .prepare("SELECT COUNT(*) AS n FROM documents WHERE source_id = ?")
+      .get(sourceId) as { n: number };
+    return row.n;
+  }
+
+  countChunksForSource(sourceId: string): number {
+    const row = this.db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM chunks c
+         JOIN documents d ON d.id = c.document_id
+         WHERE d.source_id = ?`,
+      )
+      .get(sourceId) as { n: number };
+    return row.n;
+  }
+
+  listChunksForCourse(courseId: string): ChunkRow[] {
+    return this.db
+      .prepare(
+        `SELECT id, document_id, course_id, ord, text, locator_json, heading_path, token_count
+         FROM chunks WHERE course_id = ? ORDER BY document_id ASC, ord ASC`,
+      )
+      .all(courseId) as ChunkRow[];
+  }
+
   unknownCourseMessage(courseId: string): string {
     const ids = this.idList();
     if (!ids) {
       return `Unknown course_id "${courseId}". No courses yet. Call add_course first.`;
     }
     return `Unknown course_id "${courseId}". Valid ids: ${ids}`;
+  }
+
+  private jobToStatus(job: JobRow): IngestStatusRow {
+    const parsed = parseJobResult(job.result_json);
+    const docs = parsed.docs ?? this.countDocuments(job.source_id);
+    const chunks = parsed.chunks ?? this.countChunksForSource(job.source_id);
+    return {
+      job_id: job.id,
+      source_id: job.source_id,
+      state: job.state,
+      progress: job.progress ?? 0,
+      message: job.message ?? "",
+      docs,
+      chunks,
+      skipped: parsed.skipped,
+    };
   }
 
   private getCourse(id: string): { exam_dates_json: string } | undefined {
@@ -194,6 +568,27 @@ function parseExams(raw: string): Exam[] {
   }
 }
 
-function nowIso(): string {
-  return new Date().toISOString();
+function parseJobResult(raw: string | null): {
+  docs?: number;
+  chunks?: number;
+  skipped: Array<{ url: string; reason: string }>;
+} {
+  if (!raw) {
+    return { skipped: [] };
+  }
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const skippedRaw = Array.isArray(parsed.skipped) ? parsed.skipped : [];
+    const skipped = skippedRaw.map((item) => {
+      const rec = item as Record<string, unknown>;
+      return { url: String(rec.url ?? ""), reason: String(rec.reason ?? "") };
+    });
+    return {
+      docs: typeof parsed.docs === "number" ? parsed.docs : undefined,
+      chunks: typeof parsed.chunks === "number" ? parsed.chunks : undefined,
+      skipped,
+    };
+  } catch {
+    return { skipped: [] };
+  }
 }
