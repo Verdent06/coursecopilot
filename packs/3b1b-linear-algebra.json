@@ -1,0 +1,159 @@
+{
+  "id": "3b1b-linear-algebra",
+  "name": "Essence of Linear Algebra",
+  "institution": "3Blue1Brown",
+  "term": "2016",
+  "license_note": "Public YouTube series by Grant Sanderson; this pack contains links only.",
+  "sources": [
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab",
+      "title": "Essence of linear algebra"
+    },
+    {
+      "kind": "website",
+      "url": "https://www.3blue1brown.com/topics/linear-algebra",
+      "max_depth": 2,
+      "max_pages": 30
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Vectors",
+      "topics": [
+        "Vectors"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Linear combinations, span, and basis vectors",
+      "topics": [
+        "Linear combinations, span, and basis vectors",
+        "Span",
+        "Basis"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Linear transformations and matrices",
+      "topics": [
+        "Linear transformations and matrices",
+        "Linear transformations",
+        "Matrices"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Matrix multiplication as composition",
+      "topics": [
+        "Matrix multiplication as composition",
+        "Matrix multiplication"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Three-dimensional linear transformations",
+      "topics": [
+        "Three-dimensional linear transformations",
+        "3D transformations"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "The determinant",
+      "topics": [
+        "The determinant",
+        "Determinant"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Inverse matrices, column space and null space",
+      "topics": [
+        "Inverse matrices, column space and null space",
+        "Inverse",
+        "Column space",
+        "Null space"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Nonsquare matrices as transformations between dimensions",
+      "topics": [
+        "Nonsquare matrices as transformations between dimensions",
+        "Nonsquare matrices"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Dot products and duality",
+      "topics": [
+        "Dot products and duality",
+        "Dot product",
+        "Duality"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Cross products",
+      "topics": [
+        "Cross products",
+        "Cross product"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Cross products in the light of linear transformations",
+      "topics": [
+        "Cross products in the light of linear transformations",
+        "Cross product"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Cramer's rule, explained geometrically",
+      "topics": [
+        "Cramer's rule, explained geometrically",
+        "Cramer's rule"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "Change of basis",
+      "topics": [
+        "Change of basis"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "Eigenvectors and eigenvalues",
+      "topics": [
+        "Eigenvectors and eigenvalues",
+        "Eigenvectors",
+        "Eigenvalues"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "A quick trick for computing eigenvalues",
+      "topics": [
+        "A quick trick for computing eigenvalues",
+        "Eigenvalues"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "Abstract vector spaces",
+      "topics": [
+        "Abstract vector spaces",
+        "Vector spaces"
+      ]
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

@@ -1,0 +1,244 @@
+{
+  "id": "cmu-15-445-f25",
+  "name": "Intro to Database Systems",
+  "institution": "Carnegie Mellon University",
+  "term": "Fall 2025",
+  "license_note": "Public course site 15445.courses.cs.cmu.edu; this pack contains links only.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://15445.courses.cs.cmu.edu/fall2025/",
+      "max_depth": 2,
+      "max_pages": 80,
+      "include_prefix": "https://15445.courses.cs.cmu.edu/fall2025/"
+    },
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PLSE8ODhjZXjYMAgsGH-GtY5rJYZ6zjsd5",
+      "title": "CMU Intro to Database Systems (15-445/645 - Fall 2025)"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Relational Model & Algebra",
+      "topics": [
+        "Relational Model & Algebra",
+        "Relational model",
+        "Relational algebra"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Modern SQL",
+      "topics": [
+        "Modern SQL",
+        "SQL"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Database Storage I",
+      "topics": [
+        "Database Storage I",
+        "Storage"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Memory Management",
+      "topics": [
+        "Memory Management",
+        "Buffer pool",
+        "Memory management"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Database Storage II",
+      "topics": [
+        "Database Storage II",
+        "Storage"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Storage Models & Compression",
+      "topics": [
+        "Storage Models & Compression",
+        "NSM",
+        "DSM",
+        "Compression"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Hash Tables",
+      "topics": [
+        "Hash Tables",
+        "Hash tables"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Indexes & Filters I",
+      "topics": [
+        "Indexes & Filters I",
+        "Indexes",
+        "B+ trees"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Indexes & Filters II",
+      "topics": [
+        "Indexes & Filters II",
+        "Bloom filters"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Index Concurrency Control",
+      "topics": [
+        "Index Concurrency Control",
+        "Index concurrency"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Sorting & Aggregations Algorithms",
+      "topics": [
+        "Sorting & Aggregations Algorithms",
+        "External sorting",
+        "Aggregation"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Joins Algorithms",
+      "topics": [
+        "Joins Algorithms",
+        "Joins"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "Query Execution I",
+      "topics": [
+        "Query Execution I",
+        "Query execution"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "Query Execution II",
+      "topics": [
+        "Query Execution II",
+        "Query execution"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "Query Planning & Optimization I",
+      "topics": [
+        "Query Planning & Optimization I",
+        "Query optimization"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "Query Planning & Optimization II",
+      "topics": [
+        "Query Planning & Optimization II",
+        "Query optimization"
+      ]
+    },
+    {
+      "lecture": 17,
+      "title": "Concurrency Control Theory",
+      "topics": [
+        "Concurrency Control Theory",
+        "ACID",
+        "Concurrency control"
+      ]
+    },
+    {
+      "lecture": 18,
+      "title": "Two-Phase Locking Concurrency Control",
+      "topics": [
+        "Two-Phase Locking Concurrency Control",
+        "Two-phase locking"
+      ]
+    },
+    {
+      "lecture": 19,
+      "title": "Timestamp Ordering Concurrency Control",
+      "topics": [
+        "Timestamp Ordering Concurrency Control",
+        "Timestamp ordering"
+      ]
+    },
+    {
+      "lecture": 20,
+      "title": "Multi-Version Concurrency Control",
+      "topics": [
+        "Multi-Version Concurrency Control",
+        "MVCC"
+      ]
+    },
+    {
+      "lecture": 21,
+      "title": "Database Logging",
+      "topics": [
+        "Database Logging",
+        "Logging",
+        "ARIES"
+      ]
+    },
+    {
+      "lecture": 22,
+      "title": "Database Recovery",
+      "topics": [
+        "Database Recovery",
+        "Recovery"
+      ]
+    },
+    {
+      "lecture": 23,
+      "title": "Distributed Database Systems I",
+      "topics": [
+        "Distributed Database Systems I",
+        "Distributed databases"
+      ]
+    },
+    {
+      "lecture": 24,
+      "title": "Distributed Database Systems II",
+      "topics": [
+        "Distributed Database Systems II",
+        "Distributed databases"
+      ]
+    },
+    {
+      "lecture": 25,
+      "title": "Final Review + Systems Potpourri",
+      "topics": [
+        "Final Review + Systems Potpourri",
+        "Course review"
+      ]
+    }
+  ],
+  "exams": [
+    {
+      "name": "Midterm"
+    },
+    {
+      "name": "Final"
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

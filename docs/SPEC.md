@@ -19,7 +19,7 @@
 | Install | `npx coursecopilot setup` detects **every local client it can find** (Claude Desktop, Claude Code, Cursor, Gemini CLI) and writes each config after backing it up. For web clients it prints the public URL to paste (or offers `--remote` to start a tunnel). `npx coursecopilot doctor` checks the install. Manual fallbacks: Cursor deeplink, Claude Desktop `.mcpb`, JSON snippets. |
 | Client support | **All of these must work before launch:** Claude Desktop, claude.ai web, Claude Code, Cursor, ChatGPT (developer mode; plan-gated), Gemini CLI, and the Gemini app via Gemini Spark custom apps (eligibility-gated, §3.2). |
 | Canvas (v1) | Read-only Canvas integration at canvas-mcp level: courses, files, modules, pages, assignments + due dates, announcements. Uses **your own personal access token**, local only. If the school blocks tokens, it fails gracefully and points to manual export / website / packs. Own milestone (M6), after crawler + YouTube and before launch. |
-| Course packs (core v1) | A pack is a small JSON/YAML manifest: course id/name/term, source URLs, and a lecture → topic map. It contains **no copyrighted content**. `npx coursecopilot add-pack <id\|url\|path>` downloads the materials from their original sources onto your machine and builds the index. `export-pack` creates a pack from a local course. Public registry: `Verdent06/coursecopilot-packs`, with 10–20 starter packs for public courses. |
+| Course packs (core v1) | A pack is a small JSON/YAML manifest: course id/name/term, source URLs, and a lecture → topic map. It contains **no copyrighted content**. `npx coursecopilot add-pack <id\|url\|path>` downloads the materials from their original sources onto your machine and builds the index. `export-pack` creates a pack from a local course. Public registry: **in this repo** (`packs/index.json` + `packs/<id>.json`), with 10–20 starter packs for public courses. |
 | Cut from v1 | Canvas writes, Canvas OAuth / multi-user hosting, Google AI Studio (no MCP client exists, §3.2), and polish on the exam planner. |
 | Remote mode | **Required for launch** (M9), self-hosted. `coursecopilot serve --http` with a bearer token or secret URL path, made public through `coursecopilot tunnel` (Cloudflare quick tunnel) or a one-click deploy (Fly.io / Render / Cloudflare Containers templates). No central hosted service in v1. |
 
@@ -470,12 +470,12 @@ Rules: http(s) URLs only, no embedded text/slides/answers, at most 500 sources, 
 
 **CLI:** `coursecopilot add-pack <id|url|path>` resolves the pack (registry id → `index.json` from the registry repo's raw GitHub URL, cached for 24 h; or a direct URL; or a local file), validates it, creates the course, enqueues each source through the normal pipelines (robots, rate limits, and the SSRF guard all still apply), applies the topic map, and prints progress. `coursecopilot export-pack <course> [-o file]` writes a manifest from a local course: website/YouTube/PDF URLs are kept, and local file sources are dropped with a warning. `coursecopilot list-packs [query]` lists packs. The MCP tools #19–21 do the same things.
 
-**Registry** (`Verdent06/coursecopilot-packs`, a separate repo so pack PRs don't churn the main repo; a `packs/` folder in the main repo is the fallback if that's simpler at first):
+**Registry** (in this repo; a separate `coursecopilot-packs` repo was the original plan, superseded by the in-repo fallback in M11):
 ```
-packs/<id>.yaml   index.json (generated)   schema/pack.schema.json
-CONTRIBUTING.md   .github/workflows/validate.yml
+packs/<id>.json   packs/index.json (generated)   packs/schema/pack.schema.json
+CONTRIBUTING-packs.md   CI jobs in .github/workflows/ci.yml
 ```
-Contributing is PR-based: run `export-pack`, open a PR, and CI runs schema validation, a duplicate-id check, a link HEAD check (warn on 4xx, don't fail), robots.txt allowance, a "no content" check (rejects large inline strings or non-URL blobs), and regenerates `index.json` on merge. Packs carry `verified: true` only after a maintainer test-ingests them.
+Default index URL: `https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/index.json`. Contributing is PR-based: run `export-pack`, open a PR, and CI runs schema validation, a duplicate-id check, a link HEAD check (warn on 4xx, don't fail), a "no content" check (rejects large inline strings or non-URL blobs), and requires `index.json` to match a fresh generation. Packs carry `verified: true` only after a maintainer test-ingests them.
 
 **Starter packs (10–20, goal for launch).** Every one needs its URLs checked and a test-ingest before shipping. **[all to-verify]**
 - Harvard CS50x (cs50.harvard.edu, YouTube)
@@ -624,7 +624,8 @@ coursecopilot/
   deploy/ render.yaml  fly.toml  cloudflare/
   scripts/ make-cursor-link.ts  pack-mcpb.ts  demo-seed.ts
   docs/ install.md  clients.md (compatibility matrix)  canvas.md  packs.md  remote.md  architecture.md  privacy.md
-  # registry lives in Verdent06/coursecopilot-packs (packs/, index.json, schema/, validate CI)
+  packs/ <id>.json  index.json  schema/pack.schema.json   # in-repo registry (M11)
+  CONTRIBUTING-packs.md
   .github/workflows/ ci.yml  release.yml
 ```
 
@@ -744,7 +745,7 @@ M0 and M1 are already being built and are **unchanged**. Everything from M2 on i
 | M8 | Learning layer (trimmed) | topics heuristic, `set_topics`, `generate_quiz_context`, `record_quiz_attempt`, mastery, `get_weak_spots`, basic `get_study_plan` (§11 as is), Canvas due dates suggested as exams, prompts incl. `quiz_me_on_misses` | math golden tests + full e2e scenario (§16) |
 | M9 | **Remote / HTTP mode** | `serve --http`, bearer + secret path, host validation, SSRF/path guards, `search`/`fetch` aliases, `coursecopilot tunnel`, Dockerfile + GHCR image, Render/Fly/Cloudflare one-click templates, `docs/remote.md`; probe whether claude.ai/ChatGPT/Gemini app accept no-auth URLs, and add single-user OAuth + DCR here if any don't | e2e suite over HTTP; one real connection each from claude.ai, ChatGPT, and the Gemini app to a tunnel and to a Render deploy |
 | M10 | Setup + doctor (all clients) | `setup` detects Claude Desktop, Claude Code, Cursor, Gemini CLI (backup, merge, `--dry-run`, `--undo`, `--client`), web-client instructions and `setup --remote`, optional `canvas connect` step, `doctor` (incl. Canvas + remote URL checks), model pre-download | temp-dir config tests for all 4 local clients; fresh-machine manual check on macOS + Windows |
-| M11 | Registry + starter packs | `Verdent06/coursecopilot-packs` repo: schema, index.json generator, CONTRIBUTING, validate CI; 10–20 starter packs each test-ingested; nightly pack sweep | `add-pack <id>` works for every shipped pack; CI rejects an invalid / content-embedding pack |
+| M11 | Registry + starter packs | In-repo `packs/` registry: schema, index.json generator, CONTRIBUTING-packs.md, validate CI; 10–20 starter packs each test-ingested; nightly pack sweep | `add-pack <id>` works for every shipped pack; CI rejects an invalid / content-embedding pack |
 | M12 | **Client compatibility matrix** | run the §16 matrix on all 7 surfaces (Claude Desktop, claude.ai, Claude Code, Cursor, ChatGPT, Gemini CLI, Gemini app), fix client-specific bugs (schemas, annotations, SSE alias if needed), write `docs/clients.md` | every client ✅, or ⚠️ only for documented vendor gates, approved by Vedant |
 | M13 | Distribution | npm publish workflow, MCPB manifest + pack, Cursor link generator, deploy buttons, README (§18), tools doc gen | `npx coursecopilot setup && add-pack cs50x` works on a fresh machine; Render button deploys a working instance; release v0.1.0 |
 | M14 | Launch + demo | `scripts/demo-seed.ts`, 20 s demo across Claude + ChatGPT/Gemini (§19), README GIF, comparison table, launch posts (r/uofm, class Discords, r/ClaudeAI, r/ChatGPT, r/mcp, Show HN), perf pass + error messages | demo reproducible from a clean machine in one take |
@@ -893,7 +894,7 @@ Chosen while implementing course packs.
 1. **No extra schema bump.** The `packs` table and `topics.origin = 'pack'` already exist from M2. Leccap set `schema_version` to **3**; M7 does not change it.
 2. **Structured output wrappers.** `list_packs` returns `{ packs: [...] }`. `export_pack` returns `{ manifest, path?, warnings }`. `add_pack` matches the spec table (`course_id`, `pack_id`, `job_ids`, `skipped`).
 3. **Pack source kinds.** Manifest kinds are `website` | `pdf` | `youtube` | `transcript`. `pdf` is stored as a `website` source whose seed is the PDF URL (the M4 crawler already indexes a file seed). `as_slides` defaults to true for `pdf`.
-4. **Registry.** `COURSECOPILOT_PACK_REGISTRY` overrides the default `https://raw.githubusercontent.com/Verdent06/coursecopilot-packs/main/index.json`. The index is cached 24 h under `$COURSECOPILOT_HOME/cache/registry-index.json`. Stale cache is used if a refresh fails. The public registry repo is M11 and may 404; `add-pack` still works with a URL or local path.
+4. **Registry.** `COURSECOPILOT_PACK_REGISTRY` overrides the default `https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/index.json`. The index is cached 24 h under `$COURSECOPILOT_HOME/cache/registry-index.json`. Stale cache is used if a refresh fails. Pack files live at `packs/<id>.json` in this repo (M11). `add-pack` still works with a URL or local path.
 5. **`export-pack` exclusions.** Canvas URIs, leccap / lecture-capture hosts, and local files are never written as sources. Optional `connect_yourself` placeholders tell the importer to attach those themselves. `include_local_paths` only mentions paths in that placeholder; it does not put `file://` into `sources` (http(s) only). Exam dates are omitted from public packs.
 6. **Topic map.** Pack topics are created with origin `pack` before ingest. After each pack source job finishes, chunks are bound by `lecture_no` / `lecN` in the title or URL and by keyword match on the entry title. Heuristic topics still run and do not overwrite pack rows.
 7. **Course id from pack id.** `mit-6.045-s11` is a valid pack id but not a valid course slug (dots). The default `course_id` replaces `.` with `-` unless the pack id already passes `isValidCourseId`, or the caller passes `course_id`.
@@ -901,3 +902,14 @@ Chosen while implementing course packs.
 9. **YAML.** Manifests may be `.json` or `.yaml`/`.yml` (`yaml` package). Export writes JSON.
 10. **Remote mode.** Local pack *paths* follow `--allow-path`. Pack source URLs still go through the SSRF guard when `allowPrivateNetwork` is false.
 11. **`leccap` sources.** `export-pack` drops `kind: leccap` (and leccap/lecture-capture hosts) with a `connect_yourself` placeholder. Packs never carry session cookies or capture media.
+
+---
+
+## 31. Spec amendments (M11)
+
+Chosen while implementing the in-repo pack registry.
+
+1. **No separate registry repo.** Starter packs and `index.json` live in this repository at `packs/<id>.json` and `packs/index.json`, using the existing `packs/schema/pack.schema.json`. Default registry URL is `https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/index.json`.
+2. **Contribution.** PR-based via `CONTRIBUTING-packs.md`. `npm run packs:index` regenerates the catalog; CI fails if the committed index is stale.
+3. **CI.** A blocking job validates every pack against the schema (id/filename, http(s) only, no embedded content, unique ids). A separate non-blocking job HEADs/GETs source URLs and warns on 4xx without failing the workflow.
+4. **Starter packs.** 10–20 openly available courses only. Topic maps are taken from each course's published lecture list. UMich EECS 376 lists only public `eecs376.org` / notes URLs plus `connect_yourself` placeholders for leccap and Canvas.

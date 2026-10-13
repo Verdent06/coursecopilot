@@ -1,0 +1,303 @@
+{
+  "id": "mit-18.06-s10",
+  "name": "Linear Algebra",
+  "institution": "MIT OpenCourseWare",
+  "term": "Spring 2010",
+  "license_note": "Materials CC BY-NC-SA on ocw.mit.edu; this pack contains links only, not course content.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/",
+      "max_depth": 2,
+      "max_pages": 80
+    },
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PL49CF3715CB9EF31D",
+      "title": "Gilbert Strang lectures on Linear Algebra (MIT)"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "The geometry of linear equations",
+      "topics": [
+        "The geometry of linear equations",
+        "Linear equations"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Elimination with matrices",
+      "topics": [
+        "Elimination with matrices",
+        "Gaussian elimination"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Multiplication and inverse matrices",
+      "topics": [
+        "Multiplication and inverse matrices",
+        "Matrix inverse"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Factorization into A = LU",
+      "topics": [
+        "Factorization into A = LU",
+        "LU factorization"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Transposes, permutations, spaces R^n",
+      "topics": [
+        "Transposes, permutations, spaces R^n",
+        "Transpose",
+        "Permutation matrices"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Column space and nullspace",
+      "topics": [
+        "Column space and nullspace",
+        "Column space",
+        "Nullspace"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Solving Ax = 0: pivot variables, special solutions",
+      "topics": [
+        "Solving Ax = 0: pivot variables, special solutions",
+        "Nullspace",
+        "Pivot variables"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Solving Ax = b: row reduced form R",
+      "topics": [
+        "Solving Ax = b: row reduced form R",
+        "Row reduction"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Independence, basis, and dimension",
+      "topics": [
+        "Independence, basis, and dimension",
+        "Basis",
+        "Dimension"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "The four fundamental subspaces",
+      "topics": [
+        "The four fundamental subspaces",
+        "Four fundamental subspaces"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Matrix spaces; rank 1; small world graphs",
+      "topics": [
+        "Matrix spaces; rank 1; small world graphs",
+        "Rank"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Graphs, networks, incidence matrices",
+      "topics": [
+        "Graphs, networks, incidence matrices",
+        "Incidence matrices"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "Quiz 1 review",
+      "topics": [
+        "Quiz 1 review"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "Orthogonal vectors and subspaces",
+      "topics": [
+        "Orthogonal vectors and subspaces",
+        "Orthogonality"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "Projections onto subspaces",
+      "topics": [
+        "Projections onto subspaces",
+        "Projections"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "Projection matrices and least squares",
+      "topics": [
+        "Projection matrices and least squares",
+        "Least squares"
+      ]
+    },
+    {
+      "lecture": 17,
+      "title": "Orthogonal matrices and Gram-Schmidt",
+      "topics": [
+        "Orthogonal matrices and Gram-Schmidt",
+        "Gram-Schmidt"
+      ]
+    },
+    {
+      "lecture": 18,
+      "title": "Properties of determinants",
+      "topics": [
+        "Properties of determinants",
+        "Determinants"
+      ]
+    },
+    {
+      "lecture": 19,
+      "title": "Determinant formulas and cofactors",
+      "topics": [
+        "Determinant formulas and cofactors",
+        "Cofactors"
+      ]
+    },
+    {
+      "lecture": 20,
+      "title": "Cramer's rule, inverse matrix, and volume",
+      "topics": [
+        "Cramer's rule, inverse matrix, and volume",
+        "Cramer's rule"
+      ]
+    },
+    {
+      "lecture": 21,
+      "title": "Eigenvalues and eigenvectors",
+      "topics": [
+        "Eigenvalues and eigenvectors",
+        "Eigenvalues",
+        "Eigenvectors"
+      ]
+    },
+    {
+      "lecture": 22,
+      "title": "Diagonalization and powers of A",
+      "topics": [
+        "Diagonalization and powers of A",
+        "Diagonalization"
+      ]
+    },
+    {
+      "lecture": 23,
+      "title": "Differential equations and exp(At)",
+      "topics": [
+        "Differential equations and exp(At)",
+        "Matrix exponential"
+      ]
+    },
+    {
+      "lecture": 24,
+      "title": "Markov matrices; Fourier series",
+      "topics": [
+        "Markov matrices; Fourier series",
+        "Markov matrices",
+        "Fourier series"
+      ]
+    },
+    {
+      "lecture": 25,
+      "title": "Symmetric matrices and positive definiteness",
+      "topics": [
+        "Symmetric matrices and positive definiteness",
+        "Symmetric matrices"
+      ]
+    },
+    {
+      "lecture": 26,
+      "title": "Complex matrices; fast Fourier transform",
+      "topics": [
+        "Complex matrices; fast Fourier transform",
+        "FFT"
+      ]
+    },
+    {
+      "lecture": 27,
+      "title": "Positive definite matrices and minima",
+      "topics": [
+        "Positive definite matrices and minima",
+        "Positive definite matrices"
+      ]
+    },
+    {
+      "lecture": 28,
+      "title": "Similar matrices and Jordan form",
+      "topics": [
+        "Similar matrices and Jordan form",
+        "Jordan form"
+      ]
+    },
+    {
+      "lecture": 29,
+      "title": "Singular value decomposition",
+      "topics": [
+        "Singular value decomposition",
+        "SVD"
+      ]
+    },
+    {
+      "lecture": 30,
+      "title": "Linear transformations and their matrices",
+      "topics": [
+        "Linear transformations and their matrices",
+        "Linear transformations"
+      ]
+    },
+    {
+      "lecture": 31,
+      "title": "Change of basis; image compression",
+      "topics": [
+        "Change of basis; image compression",
+        "Change of basis"
+      ]
+    },
+    {
+      "lecture": 32,
+      "title": "Quiz 3 review",
+      "topics": [
+        "Quiz 3 review"
+      ]
+    },
+    {
+      "lecture": 33,
+      "title": "Left and right inverses; pseudoinverse",
+      "topics": [
+        "Left and right inverses; pseudoinverse",
+        "Pseudoinverse"
+      ]
+    },
+    {
+      "lecture": 34,
+      "title": "Final course review",
+      "topics": [
+        "Final course review",
+        "Course review"
+      ]
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

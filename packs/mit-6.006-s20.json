@@ -1,0 +1,209 @@
+{
+  "id": "mit-6.006-s20",
+  "name": "Introduction to Algorithms",
+  "institution": "MIT OpenCourseWare",
+  "term": "Spring 2020",
+  "license_note": "Materials CC BY-NC-SA on ocw.mit.edu; this pack contains links only, not course content.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/",
+      "max_depth": 2,
+      "max_pages": 80
+    },
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PLUl4u3cNGP63EdVPNLG3ToM6LaEUuStEY",
+      "title": "MIT 6.006 Introduction to Algorithms, Spring 2020"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Algorithms and Computation",
+      "topics": [
+        "Algorithms and Computation",
+        "Algorithms",
+        "Computation"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Data Structures and Dynamic Arrays",
+      "topics": [
+        "Data Structures and Dynamic Arrays",
+        "Data structures",
+        "Dynamic arrays"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Sets and Sorting",
+      "topics": [
+        "Sets and Sorting",
+        "Sorting",
+        "Sets"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Hashing",
+      "topics": [
+        "Hashing"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Linear Sorting",
+      "topics": [
+        "Linear Sorting",
+        "Linear sorting"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Binary Trees, Part 1",
+      "topics": [
+        "Binary Trees, Part 1",
+        "Binary trees"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Binary Trees, Part 2: AVL",
+      "topics": [
+        "Binary Trees, Part 2: AVL",
+        "AVL trees"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Binary Heaps",
+      "topics": [
+        "Binary Heaps",
+        "Binary heaps"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Breadth-First Search",
+      "topics": [
+        "Breadth-First Search",
+        "Breadth-first search",
+        "BFS"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Depth-First Search",
+      "topics": [
+        "Depth-First Search",
+        "Depth-first search",
+        "DFS"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Weighted Shortest Paths",
+      "topics": [
+        "Weighted Shortest Paths",
+        "Shortest paths"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Bellman-Ford",
+      "topics": [
+        "Bellman-Ford"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "Dijkstra",
+      "topics": [
+        "Dijkstra"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "APSP and Johnson",
+      "topics": [
+        "APSP and Johnson",
+        "All-pairs shortest paths",
+        "Johnson's algorithm"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "Dynamic Programming, Part 1: SRTBOT, Fib, DAGs, Bowling",
+      "topics": [
+        "Dynamic Programming, Part 1: SRTBOT, Fib, DAGs, Bowling",
+        "Dynamic programming"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "Dynamic Programming, Part 2: LCS, LIS, Coins",
+      "topics": [
+        "Dynamic Programming, Part 2: LCS, LIS, Coins",
+        "LCS",
+        "LIS"
+      ]
+    },
+    {
+      "lecture": 17,
+      "title": "Dynamic Programming, Part 3: APSP, Parens, Piano",
+      "topics": [
+        "Dynamic Programming, Part 3: APSP, Parens, Piano",
+        "Parenthesization"
+      ]
+    },
+    {
+      "lecture": 18,
+      "title": "Dynamic Programming, Part 4: Rods, Subset Sum, Pseudopolynomial",
+      "topics": [
+        "Dynamic Programming, Part 4: Rods, Subset Sum, Pseudopolynomial",
+        "Subset sum"
+      ]
+    },
+    {
+      "lecture": 19,
+      "title": "Complexity",
+      "topics": [
+        "Complexity"
+      ]
+    },
+    {
+      "lecture": 20,
+      "title": "Course Review",
+      "topics": [
+        "Course Review",
+        "Course review"
+      ]
+    },
+    {
+      "lecture": 21,
+      "title": "Algorithms—Next Steps",
+      "topics": [
+        "Algorithms—Next Steps",
+        "Next steps"
+      ]
+    }
+  ],
+  "exams": [
+    {
+      "name": "Quiz 1"
+    },
+    {
+      "name": "Quiz 2"
+    },
+    {
+      "name": "Final"
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

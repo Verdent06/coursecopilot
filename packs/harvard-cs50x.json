@@ -1,0 +1,123 @@
+{
+  "id": "harvard-cs50x",
+  "name": "CS50x: Introduction to Computer Science",
+  "institution": "Harvard University",
+  "term": "2026",
+  "license_note": "CS50 materials are Creative Commons BY-NC-SA on cs50.harvard.edu; this pack contains links only.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/2026/",
+      "max_depth": 2,
+      "max_pages": 60,
+      "include_prefix": "https://cs50.harvard.edu/x/"
+    },
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T380hlTqAU8HfvVepCcjCqTg6",
+      "title": "CS50x 2026 Lectures"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 0,
+      "title": "Scratch",
+      "topics": [
+        "Scratch",
+        "Computational thinking"
+      ]
+    },
+    {
+      "lecture": 1,
+      "title": "C",
+      "topics": [
+        "C",
+        "Source code",
+        "Conditionals",
+        "Loops"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Arrays",
+      "topics": [
+        "Arrays"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Algorithms",
+      "topics": [
+        "Algorithms",
+        "Searching",
+        "Sorting"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Memory",
+      "topics": [
+        "Memory",
+        "Pointers"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Data Structures",
+      "topics": [
+        "Data Structures",
+        "Data structures",
+        "Linked lists",
+        "Hash tables",
+        "Tries"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Python",
+      "topics": [
+        "Python"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "SQL",
+      "topics": [
+        "SQL",
+        "Databases"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "HTML, CSS, JavaScript",
+      "topics": [
+        "HTML, CSS, JavaScript",
+        "HTML",
+        "CSS",
+        "JavaScript"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Flask",
+      "topics": [
+        "Flask",
+        "Web applications"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "The End",
+      "topics": [
+        "The End",
+        "Cybersecurity",
+        "Final project"
+      ]
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

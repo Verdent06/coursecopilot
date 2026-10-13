@@ -1,0 +1,97 @@
+{
+  "id": "mit-missing-semester",
+  "name": "The Missing Semester of Your CS Education",
+  "institution": "MIT",
+  "term": "IAP 2026",
+  "license_note": "Public course notes at missing.csail.mit.edu; this pack contains links only.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://missing.csail.mit.edu/",
+      "max_depth": 2,
+      "max_pages": 40
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Course Overview + Introduction to the Shell",
+      "topics": [
+        "Course Overview + Introduction to the Shell",
+        "Shell"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Command-line Environment",
+      "topics": [
+        "Command-line Environment",
+        "Command-line environment"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Development Environment and Tools",
+      "topics": [
+        "Development Environment and Tools",
+        "Editors",
+        "Development tools"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Debugging and Profiling",
+      "topics": [
+        "Debugging and Profiling",
+        "Debugging",
+        "Profiling"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Version Control and Git",
+      "topics": [
+        "Version Control and Git",
+        "Git",
+        "Version control"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Packaging and Shipping Code",
+      "topics": [
+        "Packaging and Shipping Code",
+        "Packaging"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Agentic Coding",
+      "topics": [
+        "Agentic Coding",
+        "Agentic coding"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Beyond the Code",
+      "topics": [
+        "Beyond the Code",
+        "Beyond the code"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Code Quality",
+      "topics": [
+        "Code Quality",
+        "Code quality"
+      ]
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

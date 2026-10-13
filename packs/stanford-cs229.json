@@ -1,0 +1,197 @@
+{
+  "id": "stanford-cs229",
+  "name": "Machine Learning",
+  "institution": "Stanford University",
+  "term": "Public notes",
+  "license_note": "Public course notes and lecture videos linked from cs229.stanford.edu; this pack contains links only.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://cs229.stanford.edu/",
+      "max_depth": 2,
+      "max_pages": 40
+    },
+    {
+      "kind": "website",
+      "url": "https://cs229.stanford.edu/syllabus-new.html",
+      "max_depth": 1,
+      "max_pages": 30
+    },
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PLoROMvodv4rNyWOpJg_Yh4NSqI4Z4vOYy",
+      "title": "Stanford CS229: Machine Learning (Spring 2022)"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Introduction and Basic Concepts",
+      "topics": [
+        "Introduction and Basic Concepts",
+        "Introduction"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Supervised Learning Setup. Linear Regression.",
+      "topics": [
+        "Supervised Learning Setup. Linear Regression.",
+        "Supervised learning",
+        "Linear regression"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Weighted Least Squares. Logistic Regression. Newton's Method. Perceptron. Exponential Family. Generalized Linear Models.",
+      "topics": [
+        "Weighted Least Squares. Logistic Regression. Newton's Method. Perceptron. Exponential Family. Generalized Linear Models.",
+        "Logistic regression",
+        "GLMs",
+        "Perceptron"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Gaussian Discriminant Analysis. Naive Bayes.",
+      "topics": [
+        "Gaussian Discriminant Analysis. Naive Bayes.",
+        "GDA",
+        "Naive Bayes"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Laplace Smoothing. Support Vector Machines.",
+      "topics": [
+        "Laplace Smoothing. Support Vector Machines.",
+        "SVM",
+        "Laplace smoothing"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Support Vector Machines. Kernels.",
+      "topics": [
+        "Support Vector Machines. Kernels.",
+        "Kernels"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Neural Networks: Basics",
+      "topics": [
+        "Neural Networks: Basics",
+        "Neural networks"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Neural Networks: Training",
+      "topics": [
+        "Neural Networks: Training",
+        "Backpropagation"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Bias-Variance tradeoff. Regularization and model/feature selection.",
+      "topics": [
+        "Bias-Variance tradeoff. Regularization and model/feature selection.",
+        "Bias-variance",
+        "Regularization"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Tree Ensembles.",
+      "topics": [
+        "Tree Ensembles.",
+        "Decision trees",
+        "Ensembles"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Practical Advice for ML projects",
+      "topics": [
+        "Practical Advice for ML projects",
+        "ML practice"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "K-means. Mixture of Gaussians. Expectation Maximization.",
+      "topics": [
+        "K-means. Mixture of Gaussians. Expectation Maximization.",
+        "K-means",
+        "GMM",
+        "EM"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "Factor Analysis.",
+      "topics": [
+        "Factor Analysis.",
+        "Factor analysis"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "Principal Component Analysis. Independent Component Analysis.",
+      "topics": [
+        "Principal Component Analysis. Independent Component Analysis.",
+        "PCA",
+        "ICA"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "MDPs. Bellman Equations.",
+      "topics": [
+        "MDPs. Bellman Equations.",
+        "MDPs",
+        "Bellman equations"
+      ]
+    },
+    {
+      "lecture": 17,
+      "title": "Value Iteration and Policy Iteration. LQR. LQG.",
+      "topics": [
+        "Value Iteration and Policy Iteration. LQR. LQG.",
+        "Value iteration",
+        "LQR"
+      ]
+    },
+    {
+      "lecture": 18,
+      "title": "Q-Learning. Value function approximation.",
+      "topics": [
+        "Q-Learning. Value function approximation.",
+        "Q-learning"
+      ]
+    },
+    {
+      "lecture": 19,
+      "title": "Policy Search. REINFORCE. POMDPs.",
+      "topics": [
+        "Policy Search. REINFORCE. POMDPs.",
+        "Policy search",
+        "REINFORCE"
+      ]
+    },
+    {
+      "lecture": 20,
+      "title": "Wrap-up",
+      "topics": [
+        "Wrap-up"
+      ]
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}
