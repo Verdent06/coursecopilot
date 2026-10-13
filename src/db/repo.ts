@@ -139,6 +139,11 @@ export type CourseInfo = {
   exams: Exam[];
 };
 
+export type DocumentRecord = DocumentRow & {
+  content_hash: string | null;
+  fetched_at: string | null;
+};
+
 const CHUNK_DETAIL_SQL = `
   SELECT
     c.id, c.document_id, c.course_id, c.ord, c.text, c.locator_json, c.heading_path, c.token_count,
@@ -604,6 +609,81 @@ export class CourseRepo {
         `SELECT id, source_id, course_id, url, title, mime, meta_json FROM documents WHERE id = ?`,
       )
       .get(id) as DocumentRow | undefined;
+  }
+
+  getDocumentRecord(id: string): DocumentRecord | undefined {
+    return this.db
+      .prepare(
+        `SELECT id, source_id, course_id, url, title, mime, meta_json, content_hash, fetched_at
+         FROM documents WHERE id = ?`,
+      )
+      .get(id) as DocumentRecord | undefined;
+  }
+
+  getDocumentBySourceUrl(sourceId: string, url: string): DocumentRecord | undefined {
+    return this.db
+      .prepare(
+        `SELECT id, source_id, course_id, url, title, mime, meta_json, content_hash, fetched_at
+         FROM documents WHERE source_id = ? AND url = ?`,
+      )
+      .get(sourceId, url) as DocumentRecord | undefined;
+  }
+
+  touchDocument(id: string, extraMeta?: Record<string, unknown>): void {
+    const row = this.getDocumentRecord(id);
+    if (!row) {
+      return;
+    }
+    let meta: Record<string, unknown> = {};
+    if (row.meta_json) {
+      try {
+        const parsed = JSON.parse(row.meta_json) as unknown;
+        if (parsed && typeof parsed === "object") {
+          meta = parsed as Record<string, unknown>;
+        }
+      } catch {
+        meta = {};
+      }
+    }
+    if (extraMeta) {
+      Object.assign(meta, extraMeta);
+    }
+    this.db
+      .prepare("UPDATE documents SET fetched_at = ?, meta_json = ? WHERE id = ?")
+      .run(nowIso(), JSON.stringify(meta), id);
+  }
+
+  deleteDocument(id: string): void {
+    this.deleteEmbeddingsForDocument(id);
+    this.db
+      .prepare(
+        `DELETE FROM chunk_topics WHERE chunk_id IN (SELECT id FROM chunks WHERE document_id = ?)`,
+      )
+      .run(id);
+    this.db.prepare("DELETE FROM documents WHERE id = ?").run(id);
+  }
+
+  deleteEmbeddingsForDocument(documentId: string): void {
+    if (!this.vecMeta().enabled) {
+      return;
+    }
+    this.db
+      .prepare(
+        `DELETE FROM chunks_vec WHERE rowid IN (SELECT id FROM chunks WHERE document_id = ?)`,
+      )
+      .run(documentId);
+  }
+
+  listChunksByIds(ids: number[]): Array<{ id: number; text: string; course_id: string }> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const placeholders = ids.map(() => "?").join(", ");
+    return this.db
+      .prepare(
+        `SELECT id, text, course_id FROM chunks WHERE id IN (${placeholders}) ORDER BY id ASC`,
+      )
+      .all(...ids) as Array<{ id: number; text: string; course_id: string }>;
   }
 
   getChunkDetail(id: number): ChunkDetail | undefined {

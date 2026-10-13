@@ -3,12 +3,11 @@ import { basename } from "node:path";
 import type { CourseRepo } from "../../db/repo.js";
 import { RepoError } from "../../db/repo.js";
 import { assertExists, resolveLocalPath, toFileUri, walkFiles } from "../../util/files.js";
-import { newId } from "../../util/ids.js";
-import { nowIso } from "../../util/time.js";
-import { chunksFromSegments } from "../chunker.js";
 import { FOLDER_FILE_CAP, MAX_FILE_BYTES } from "../config.js";
 import { sha256 } from "../hash.js";
 import { mimeForPath, supportedKind } from "../mime.js";
+import { persistExtracted } from "../persist.js";
+import { parseSourceConfig } from "../source-config.js";
 import type { ExtractedDocument, IngestResult, SkipReason } from "../types.js";
 import { extractPdf } from "./pdf.js";
 import { extractPptx } from "./pptx.js";
@@ -40,7 +39,8 @@ export async function ingestFileSource(
   const abs = resolveLocalPath(source.uri);
   assertExists(abs);
   const st = statSync(abs);
-  const lectureNo = lectureNoFromConfig(source.config_json);
+  const cfg = parseSourceConfig(source.config_json);
+  const lectureNo = cfg.lecture_no;
 
   const skipped: SkipReason[] = [];
   let files: string[] = [];
@@ -68,12 +68,12 @@ export async function ingestFileSource(
 
   if (files.length === 0) {
     onProgress(1, "No supported files found", skipped);
-    return { docs: 0, chunks: 0, skipped, errors: 0 };
+    return { docs: 0, chunks: 0, skipped, errors: 0, unchanged: 0, newChunkIds: [] };
   }
 
-  let docs = 0;
-  let chunks = 0;
   let errors = 0;
+  let unchanged = 0;
+  const newChunkIds: number[] = [];
 
   for (let i = 0; i < files.length; i++) {
     const filePath = files[i];
@@ -108,46 +108,38 @@ export async function ingestFileSource(
 
     try {
       const bytes = new Uint8Array(readFileSync(filePath));
+      const hash = sha256(bytes);
+      const existing = ctx.repo.getDocumentBySourceUrl(sourceId, fileUri);
+      if (existing?.content_hash === hash) {
+        ctx.repo.touchDocument(existing.id);
+        unchanged += 1;
+        continue;
+      }
       const extracted = await extractBytes(kind, bytes, fileUri, filePath, {
-        asSlides: asSlidesFromConfig(source.config_json),
+        asSlides: cfg.as_slides,
       });
       if (lectureNo != null) {
         extracted.meta.lecture_no = lectureNo;
       }
-      const prepared = chunksFromSegments(extracted.segments);
-      const docId = newId();
-      ctx.repo.insertDocument({
-        id: docId,
-        source_id: sourceId,
-        course_id: source.course_id,
+      const persisted = persistExtracted(ctx.repo, {
+        sourceId,
+        courseId: source.course_id,
         url: fileUri,
-        title: extracted.title,
-        mime: extracted.mime || mimeForPath(filePath) || null,
-        content_hash: sha256(bytes),
-        fetched_at: nowIso(),
-        meta_json: JSON.stringify(extracted.meta),
+        mime: extracted.mime || mimeForPath(filePath) || "",
+        contentHash: hash,
+        extracted,
       });
-      ctx.repo.insertChunks(
-        prepared.map((chunk) => ({
-          document_id: docId,
-          course_id: source.course_id,
-          ord: chunk.ord,
-          text: chunk.text,
-          locator_json: JSON.stringify(chunk.locator),
-          heading_path: chunk.headingPath,
-          token_count: chunk.tokenCount,
-        })),
-      );
-      docs += 1;
-      chunks += prepared.length;
+      newChunkIds.push(...persisted.chunkIds);
     } catch (err) {
       errors += 1;
       skipped.push({ url: fileUri, reason: errMessage(err) });
     }
   }
 
+  const docs = ctx.repo.countDocuments(sourceId);
+  const chunks = ctx.repo.countChunksForSource(sourceId);
   onProgress(1, `Indexed ${docs} document(s), ${chunks} chunk(s)`, skipped);
-  return { docs, chunks, skipped, errors };
+  return { docs, chunks, skipped, errors, unchanged, newChunkIds };
 }
 
 async function extractBytes(
@@ -168,30 +160,6 @@ async function extractBytes(
     return extractMarkdown(content, fileUri, filePath);
   }
   return extractPlainText(content, fileUri, filePath, mimeForPath(filePath) ?? "text/plain");
-}
-
-function asSlidesFromConfig(configJson: string | null): boolean | undefined {
-  if (!configJson) {
-    return undefined;
-  }
-  try {
-    const parsed = JSON.parse(configJson) as { as_slides?: unknown };
-    return typeof parsed.as_slides === "boolean" ? parsed.as_slides : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function lectureNoFromConfig(configJson: string | null): number | undefined {
-  if (!configJson) {
-    return undefined;
-  }
-  try {
-    const parsed = JSON.parse(configJson) as { lecture_no?: unknown };
-    return typeof parsed.lecture_no === "number" ? parsed.lecture_no : undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 function errMessage(err: unknown): string {

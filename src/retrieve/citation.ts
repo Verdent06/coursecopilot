@@ -86,8 +86,12 @@ export function isSlideDeckPdf(input: {
 }
 
 export function citationKind(input: CitationInput): CitationKind {
-  if (input.source_kind === "website") {
-    return "web";
+  const mime = (input.mime ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
+  if (mime === MIME_PDF || mime === "application/x-pdf") {
+    return "pdf";
+  }
+  if (mime === MIME_PPTX || mime.includes("presentationml")) {
+    return "pptx";
   }
   if (input.source_kind === "canvas") {
     return "canvas";
@@ -98,10 +102,13 @@ export function citationKind(input: CitationInput): CitationKind {
   if (input.source_kind === "transcript") {
     return "transcript";
   }
-  if (input.mime === MIME_PDF || input.locator.page != null) {
+  if (input.source_kind === "website" || mime === "text/html") {
+    return "web";
+  }
+  if (input.locator.page != null) {
     return "pdf";
   }
-  if (input.mime === MIME_PPTX || input.locator.slide != null) {
+  if (input.locator.slide != null) {
     return "pptx";
   }
   return "file";

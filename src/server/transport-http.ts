@@ -51,8 +51,9 @@ export async function startHttpServer(opts: HttpServeOptions): Promise<HttpServe
   const bind = opts.bind ?? "127.0.0.1";
   const port = opts.port ?? 8787;
   const allowLocalPaths = opts.allowLocalPaths ?? false;
+  const allowPrivateNetwork = opts.allowPrivateNetwork ?? false;
   const ownsContext = !opts.ctx;
-  const ctx = opts.ctx ?? createAppContext({ ...opts, allowLocalPaths });
+  const ctx = opts.ctx ?? createAppContext({ ...opts, allowLocalPaths, allowPrivateNetwork });
   const homeDir = getHomeDir();
   const oauth =
     opts.oauth === false

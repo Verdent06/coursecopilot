@@ -29,9 +29,20 @@ export type SkipReason = {
   reason: string;
 };
 
+export type SuggestedExam = {
+  name: string;
+  date: string | null;
+  evidence: string;
+};
+
 export type IngestResult = {
   docs: number;
   chunks: number;
   skipped: SkipReason[];
   errors: number;
+  /** Documents skipped because sha256 / ETag matched (website + file re-sync). */
+  unchanged?: number;
+  /** Newly inserted chunk ids; website/file re-sync only embeds these. */
+  newChunkIds?: number[];
+  suggestedExams?: SuggestedExam[];
 };

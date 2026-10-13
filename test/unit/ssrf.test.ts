@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { RepoError } from "../../src/db/repo.js";
 import {
   assertPublicUrl,
+  assertSafeUrl,
   isBlockedHostname,
   isPrivateIp,
   isPrivateIpv4,
+  SsrfError,
 } from "../../src/util/ssrf.js";
 
 describe("SSRF guard", () => {
@@ -19,12 +21,14 @@ describe("SSRF guard", () => {
     expect(isPrivateIp("::1")).toBe(true);
     expect(isPrivateIp("fc00::1")).toBe(true);
     expect(isPrivateIp("::ffff:192.168.0.1")).toBe(true);
+    expect(isPrivateIp("1.1.1.1")).toBe(false);
   });
 
   it("blocks localhost and .internal hostnames", () => {
     expect(isBlockedHostname("localhost")).toBe(true);
     expect(isBlockedHostname("foo.localhost")).toBe(true);
     expect(isBlockedHostname("metadata.google.internal")).toBe(true);
+    expect(isBlockedHostname("127.0.0.1")).toBe(true);
     expect(isBlockedHostname("example.com")).toBe(false);
   });
 
@@ -35,5 +39,17 @@ describe("SSRF guard", () => {
     expect(() => assertPublicUrl("ftp://example.com/x")).toThrow(RepoError);
     const u = assertPublicUrl("https://ocw.mit.edu/courses/");
     expect(u.hostname).toBe("ocw.mit.edu");
+  });
+
+  it("allows private hosts when opted in, refuses them otherwise", async () => {
+    await expect(
+      assertSafeUrl("http://127.0.0.1/course", { allowPrivateNetwork: true }),
+    ).resolves.toBeInstanceOf(URL);
+    await expect(
+      assertSafeUrl("http://127.0.0.1/course", { allowPrivateNetwork: false }),
+    ).rejects.toBeInstanceOf(SsrfError);
+    await expect(
+      assertSafeUrl("file:///etc/passwd", { allowPrivateNetwork: true }),
+    ).rejects.toBeInstanceOf(SsrfError);
   });
 });

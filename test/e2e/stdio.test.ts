@@ -6,7 +6,9 @@ import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import Database from "better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { writeFixtureSite } from "../helpers/fixture-site.js";
 import { writeSampleFolder } from "../helpers/sample-files.js";
+import { serveDirectory } from "../helpers/static-server.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const cliJs = join(repoRoot, "dist", "cli.js");
@@ -19,6 +21,7 @@ function spawnEnv(home: string): Record<string, string> {
     }
   }
   env.COURSECOPILOT_HOME = home;
+  env.COURSECOPILOT_CRAWL_DELAY_MS = "0";
   return env;
 }
 
@@ -97,6 +100,7 @@ describe("MCP stdio e2e", () => {
       "search_course",
       "set_exam",
       "set_topics",
+      "sync_course",
     ]);
     const prompts = await client.listPrompts();
     expect(prompts.prompts.map((p) => p.name).sort()).toEqual([
@@ -207,11 +211,15 @@ describe("MCP stdio e2e", () => {
       sources: [{ kind: "folder", status: "done", doc_count: 4 }],
     });
 
-    const website = await client.callTool({
+    const youtube = await client.callTool({
       name: "add_source",
-      arguments: { course_id: "eecs376-f26", kind: "website", uri: "https://example.com" },
+      arguments: {
+        course_id: "eecs376-f26",
+        kind: "youtube",
+        uri: "https://youtube.com/watch?v=x",
+      },
     });
-    expect(website.isError).toBe(true);
+    expect(youtube.isError).toBe(true);
 
     const badYt = await client.callTool({
       name: "add_source",
@@ -484,5 +492,66 @@ describe("MCP stdio e2e", () => {
     expect(body.results[0]?.citation.start_s).not.toBeNull();
     expect(body.results[0]?.text).toMatch(/pumping lemma/i);
     console.log("e2e transcript search_course", JSON.stringify(body, null, 2));
+  }, 180_000);
+
+  it("add_source(website) crawls a fixture site, cites URL#anchor, re-syncs unchanged", async () => {
+    const { client, home } = await connect();
+    const siteDir = join(home, "site");
+    await writeFixtureSite(siteDir);
+    const server = await serveDirectory(siteDir);
+    try {
+      const added = await client.callTool({
+        name: "add_course",
+        arguments: { title: "EECS 3760", course_id: "eecs3760" },
+      });
+      expect(added.isError).toBeFalsy();
+
+      const queued = await client.callTool({
+        name: "add_source",
+        arguments: {
+          course_id: "eecs3760",
+          kind: "website",
+          uri: `${server.baseUrl}/`,
+          options: { max_depth: 3, max_pages: 40 },
+        },
+      });
+      expect(queued.isError).toBeFalsy();
+      const queuedBody = queued.structuredContent as { job_id: string };
+      const job = await waitForJob(client, queuedBody.job_id);
+      expect(job.state).toBe("done");
+      expect(job.docs).toBe(7);
+      const skipped = job.skipped as Array<{ url: string; reason: string }>;
+      expect(skipped.some((s) => s.reason.includes("robots.txt"))).toBe(true);
+      expect(skipped.some((s) => s.reason.includes("requires login"))).toBe(true);
+
+      const search = await client.callTool({
+        name: "search_course",
+        arguments: { course_id: "eecs3760", query: "pumping lemma web notes", k: 8 },
+      });
+      expect(search.isError).toBeFalsy();
+      const searchBody = search.structuredContent as {
+        results: Array<{
+          citation: { url: string; kind: string; anchor: string | null; label: string };
+        }>;
+      };
+      console.log("e2e website search_course", JSON.stringify(searchBody, null, 2));
+      expect(searchBody.results.length).toBeGreaterThan(0);
+      const web = searchBody.results.find((r) => /notes\.html#pumping-lemma/.test(r.citation.url));
+      expect(web?.citation.kind).toBe("web");
+      expect(web?.citation.anchor).toBe("pumping-lemma");
+
+      const sync = await client.callTool({
+        name: "sync_course",
+        arguments: { course_id: "eecs3760" },
+      });
+      expect(sync.isError).toBeFalsy();
+      const syncIds = (sync.structuredContent as { job_ids: string[] }).job_ids;
+      expect(syncIds[0]).toBeTruthy();
+      const syncJob = await waitForJob(client, syncIds[0] as string);
+      expect(syncJob.state).toBe("done");
+      expect(String(syncJob.message)).toMatch(/unchanged/);
+    } finally {
+      await server.close();
+    }
   }, 180_000);
 });

@@ -33,3 +33,9 @@ export const YOUTUBE_PLAYLIST_CAP = 50;
 /** Shown when a video has no caption track (spec §9.4 / §9.5). */
 export const NO_CAPTIONS_FALLBACK =
   "No captions available. Export a .vtt/.srt from Canvas, Kaltura, or Panopto and add it with kind=transcript, or wait for v1.1 local Whisper.";
+
+/** Website crawl defaults (spec §3.7). */
+export const DEFAULT_MAX_DEPTH = 3;
+export const DEFAULT_MAX_PAGES = 300;
+export const CRAWL_CONCURRENCY = 2;
+export const CRAWL_DELAY_MS = 500;

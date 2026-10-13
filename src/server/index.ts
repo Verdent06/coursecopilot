@@ -34,6 +34,7 @@ import { registerSearch } from "./tools/search.js";
 import { registerSearchCourse } from "./tools/search_course.js";
 import { registerSetExam } from "./tools/set_exam.js";
 import { registerSetTopics } from "./tools/set_topics.js";
+import { registerSyncCourse } from "./tools/sync_course.js";
 
 export type AppContext = {
   opened: OpenedDatabase;
@@ -42,6 +43,7 @@ export type AppContext = {
   search: HybridSearch;
   learn: LearnService;
   allowLocalPaths: boolean;
+  allowPrivateNetwork: boolean;
 };
 
 export type CreateServerOptions = {
@@ -55,6 +57,9 @@ export type CreateServerOptions = {
   now?: () => Date;
   /** Reuse a long-lived context (HTTP: one ctx, fresh McpServer per request). */
   ctx?: AppContext;
+  /** Allow crawling loopback/RFC1918. False in remote mode (SSRF guard). */
+  allowPrivateNetwork?: boolean;
+  crawlDelayMs?: number;
 };
 
 export function createAppContext(options: CreateServerOptions = {}): AppContext {
@@ -62,19 +67,22 @@ export function createAppContext(options: CreateServerOptions = {}): AppContext 
   const repo = new CourseRepo(opened.db);
   const embedder = options.embedder === undefined ? createDefaultEmbedder() : options.embedder;
   const allowLocalPaths = options.allowLocalPaths ?? true;
+  const allowPrivateNetwork = options.allowPrivateNetwork ?? true;
   const queue = new IngestQueue({
     repo,
     allowLocalPaths,
     embedder,
+    allowPrivateNetwork,
+    crawlDelayMs: options.crawlDelayMs,
   });
   const search = new HybridSearch(repo, embedder, opened.vecEnabled);
   const learn = new LearnService(repo, search, embedder, options.now);
-  return { opened, repo, queue, search, learn, allowLocalPaths };
+  return { opened, repo, queue, search, learn, allowLocalPaths, allowPrivateNetwork };
 }
 
 export function createServer(options: CreateServerOptions = {}): McpServer {
   const ctx = options.ctx ?? createAppContext(options);
-  const { repo, queue, search, learn, allowLocalPaths } = ctx;
+  const { repo, queue, search, learn, allowLocalPaths, allowPrivateNetwork } = ctx;
 
   const server = new McpServer({
     name: SERVER_NAME,
@@ -87,10 +95,11 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
   registerAddCourse(server, repo);
   registerListCourses(server, repo);
   registerSetExam(server, repo);
-  registerAddSource(server, repo, queue, { allowLocalPaths });
+  registerAddSource(server, repo, queue, { allowLocalPaths, allowPrivateNetwork });
   registerGetIngestStatus(server, repo);
   registerListSources(server, repo);
   registerRemoveSource(server, repo);
+  registerSyncCourse(server, repo, queue);
   registerSearchCourse(server, search);
   registerGetChunk(server, search);
   registerGetDocument(server, search);
