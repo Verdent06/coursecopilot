@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "id": "invalid-content",
+  "name": "Bad pack",
+  "version": "1.0.0",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://example.edu/course/"
+    }
+  ],
+  "content": "Lecture 7. The pumping lemma for regular languages says that if A is regular then there exists a pumping length p such that any string s in A of length at least p can be divided into xyz..."
+}

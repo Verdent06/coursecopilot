@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "invalid-file-url",
+  "name": "Local path pack",
+  "version": "1.0.0",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "file:///tmp/secret-slides.pdf"
+    }
+  ]
+}

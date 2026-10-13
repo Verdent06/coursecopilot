@@ -884,3 +884,20 @@ Chosen while implementing UMich CAEN Lecture Capture as a generic lecture-captur
 6. **Fixtures.** Synthetic JSON under `test/fixtures/leccap/` (documented product shape; no real student data, no live session cookies).
 7. **Exception to §2 SSO-out-of-scope.** Lecture capture is the one source that needs a browser login. The user signs in themselves; CourseCopilot only reuses the session cookies. Passwords are never stored. This does not open Piazza/Gradescope scraping.
 
+---
+
+## 30. Spec amendments (M7)
+
+Chosen while implementing course packs.
+
+1. **No extra schema bump.** The `packs` table and `topics.origin = 'pack'` already exist from M2. Leccap set `schema_version` to **3**; M7 does not change it.
+2. **Structured output wrappers.** `list_packs` returns `{ packs: [...] }`. `export_pack` returns `{ manifest, path?, warnings }`. `add_pack` matches the spec table (`course_id`, `pack_id`, `job_ids`, `skipped`).
+3. **Pack source kinds.** Manifest kinds are `website` | `pdf` | `youtube` | `transcript`. `pdf` is stored as a `website` source whose seed is the PDF URL (the M4 crawler already indexes a file seed). `as_slides` defaults to true for `pdf`.
+4. **Registry.** `COURSECOPILOT_PACK_REGISTRY` overrides the default `https://raw.githubusercontent.com/Verdent06/coursecopilot-packs/main/index.json`. The index is cached 24 h under `$COURSECOPILOT_HOME/cache/registry-index.json`. Stale cache is used if a refresh fails. The public registry repo is M11 and may 404; `add-pack` still works with a URL or local path.
+5. **`export-pack` exclusions.** Canvas URIs, leccap / lecture-capture hosts, and local files are never written as sources. Optional `connect_yourself` placeholders tell the importer to attach those themselves. `include_local_paths` only mentions paths in that placeholder; it does not put `file://` into `sources` (http(s) only). Exam dates are omitted from public packs.
+6. **Topic map.** Pack topics are created with origin `pack` before ingest. After each pack source job finishes, chunks are bound by `lecture_no` / `lecN` in the title or URL and by keyword match on the entry title. Heuristic topics still run and do not overwrite pack rows.
+7. **Course id from pack id.** `mit-6.045-s11` is a valid pack id but not a valid course slug (dots). The default `course_id` replaces `.` with `-` unless the pack id already passes `isValidCourseId`, or the caller passes `course_id`.
+8. **CLI extras.** `coursecopilot wipe --yes` deletes `cc.db` (or `--course <id>`). Used for the export → wipe → add-pack round-trip. `add_my_course` prompt ships with M7 (deferred from M8).
+9. **YAML.** Manifests may be `.json` or `.yaml`/`.yml` (`yaml` package). Export writes JSON.
+10. **Remote mode.** Local pack *paths* follow `--allow-path`. Pack source URLs still go through the SSRF guard when `allowPrivateNetwork` is false.
+11. **`leccap` sources.** `export-pack` drops `kind: leccap` (and leccap/lecture-capture hosts) with a `connect_yourself` placeholder. Packs never carry session cookies or capture media.

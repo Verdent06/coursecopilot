@@ -159,6 +159,27 @@ export type DocumentRecord = DocumentRow & {
   fetched_at: string | null;
 };
 
+export type PackRow = {
+  id: string;
+  course_id: string;
+  version: string | null;
+  origin: string | null;
+  manifest_json: string;
+  installed_at: string | null;
+};
+
+export type InstalledPackListItem = {
+  id: string;
+  course_id: string;
+  version: string | null;
+  origin: string | null;
+  installed_at: string | null;
+  name: string;
+  term: string | null;
+  institution: string | null;
+  source_count: number;
+};
+
 const CHUNK_DETAIL_SQL = `
   SELECT
     c.id, c.document_id, c.course_id, c.ord, c.text, c.locator_json, c.heading_path, c.token_count,
@@ -1128,6 +1149,110 @@ export class CourseRepo {
     return this.db.transaction(fn)();
   }
 
+  upsertPack(input: {
+    id: string;
+    course_id: string;
+    version: string | null;
+    origin: string | null;
+    manifest_json: string;
+    installed_at: string;
+  }): void {
+    this.db
+      .prepare(
+        `INSERT INTO packs(id, course_id, version, origin, manifest_json, installed_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           course_id = excluded.course_id,
+           version = excluded.version,
+           origin = excluded.origin,
+           manifest_json = excluded.manifest_json,
+           installed_at = excluded.installed_at`,
+      )
+      .run(
+        input.id,
+        input.course_id,
+        input.version,
+        input.origin,
+        input.manifest_json,
+        input.installed_at,
+      );
+  }
+
+  getPack(id: string): PackRow | undefined {
+    return this.db
+      .prepare(
+        `SELECT id, course_id, version, origin, manifest_json, installed_at FROM packs WHERE id = ?`,
+      )
+      .get(id) as PackRow | undefined;
+  }
+
+  getPackByCourse(courseId: string): PackRow | undefined {
+    return this.db
+      .prepare(
+        `SELECT id, course_id, version, origin, manifest_json, installed_at
+         FROM packs WHERE course_id = ? ORDER BY installed_at DESC, id ASC`,
+      )
+      .get(courseId) as PackRow | undefined;
+  }
+
+  listInstalledPacks(): InstalledPackListItem[] {
+    const rows = this.db
+      .prepare(
+        `SELECT
+           p.id, p.course_id, p.version, p.origin, p.installed_at, p.manifest_json,
+           c.title AS name, c.term AS term,
+           (SELECT COUNT(*) FROM sources s WHERE s.course_id = c.id) AS source_count
+         FROM packs p
+         JOIN courses c ON c.id = p.course_id
+         ORDER BY p.id ASC`,
+      )
+      .all() as Array<{
+      id: string;
+      course_id: string;
+      version: string | null;
+      origin: string | null;
+      installed_at: string | null;
+      manifest_json: string;
+      name: string;
+      term: string | null;
+      source_count: number;
+    }>;
+    return rows.map((row) => ({
+      id: row.id,
+      course_id: row.course_id,
+      version: row.version,
+      origin: row.origin,
+      installed_at: row.installed_at,
+      name: row.name,
+      term: row.term,
+      institution: institutionFromManifest(row.manifest_json),
+      source_count: row.source_count,
+    }));
+  }
+
+  deleteCourse(courseId: string): void {
+    this.requireCourse(courseId);
+    const sources = this.listSources(courseId);
+    for (const source of sources) {
+      this.removeSource(source.source_id);
+    }
+    this.db
+      .prepare(
+        `DELETE FROM quiz_items WHERE attempt_id IN (SELECT id FROM quiz_attempts WHERE course_id = ?)`,
+      )
+      .run(courseId);
+    this.db.prepare("DELETE FROM quiz_attempts WHERE course_id = ?").run(courseId);
+    this.db.prepare("DELETE FROM topic_mastery WHERE course_id = ?").run(courseId);
+    this.db
+      .prepare(
+        `DELETE FROM chunk_topics WHERE topic_id IN (SELECT id FROM topics WHERE course_id = ?)`,
+      )
+      .run(courseId);
+    this.db.prepare("DELETE FROM topics WHERE course_id = ?").run(courseId);
+    this.db.prepare("DELETE FROM packs WHERE course_id = ?").run(courseId);
+    this.db.prepare("DELETE FROM courses WHERE id = ?").run(courseId);
+  }
+
   unknownCourseMessage(courseId: string): string {
     const ids = this.idList();
     if (!ids) {
@@ -1194,6 +1319,15 @@ function parseExams(raw: string): Exam[] {
     });
   } catch {
     return [];
+  }
+}
+
+function institutionFromManifest(raw: string): string | null {
+  try {
+    const parsed = JSON.parse(raw) as { institution?: unknown };
+    return typeof parsed.institution === "string" ? parsed.institution : null;
+  } catch {
+    return null;
   }
 }
 
