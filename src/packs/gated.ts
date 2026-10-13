@@ -35,7 +35,7 @@ export function classifyDroppedSource(uri: string, kind: SourceKind): DroppedSou
   if (isCanvasSource(uri, kind)) {
     return "canvas";
   }
-  if (isLectureCaptureUri(uri)) {
+  if (kind === "leccap" || isLectureCaptureUri(uri)) {
     return "lecture_capture";
   }
   if (isLocalSourceUri(uri, kind)) {
@@ -50,7 +50,7 @@ export function placeholderMessage(kind: DroppedSourceKind, host?: string): stri
   }
   if (kind === "lecture_capture") {
     const where = host ? ` (${host})` : "";
-    return `Lecture capture${where} is login-gated and was not exported. Export a VTT/SRT from the capture system and add it as a transcript source.`;
+    return `Lecture capture${where} is login-gated and was not exported. Run \`coursecopilot login leccap\` and add the source yourself, or export a VTT/SRT as a transcript.`;
   }
   return "Local files were omitted from the pack. Add them yourself with add_source (kind file or folder).";
 }

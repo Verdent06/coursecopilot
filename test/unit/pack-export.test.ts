@@ -38,7 +38,7 @@ describe("export-pack filters", () => {
     repo.insertSource({
       id: "s-leccap",
       course_id: "eecs376-f26",
-      kind: "website",
+      kind: "leccap",
       uri: "https://leccap.engin.umich.edu/leccap/viewer/r/abc",
       status: "done",
     });
@@ -85,7 +85,9 @@ describe("export-pack filters", () => {
       "local_files",
     ]);
     expect(manifest.connect_yourself?.some((c) => /token/i.test(c.message))).toBe(true);
-    expect(manifest.connect_yourself?.some((c) => /VTT|transcript/i.test(c.message))).toBe(true);
+    expect(
+      manifest.connect_yourself?.some((c) => /login leccap|VTT|transcript/i.test(c.message)),
+    ).toBe(true);
     expect(warnings.length).toBeGreaterThanOrEqual(3);
     expect(manifest.topics?.[0]?.topics).toContain("Pumping lemma");
     expect(JSON.stringify(manifest)).not.toMatch(/pumping lemma proof/i);
