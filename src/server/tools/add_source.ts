@@ -10,23 +10,22 @@ import { assertPublicUrl } from "../../util/ssrf.js";
 import { fail, ok } from "../tool-result.js";
 
 const KIND_MILESTONE: Record<string, string> = {
-  website: "website ingestion is not implemented yet (milestone M4)",
   canvas: "Canvas ingestion is not implemented yet (milestone M6)",
 };
 
 /**
- * Enqueue a source for ingestion. File, folder, youtube, and transcript kinds
- * are implemented. Returns a job_id immediately so the host can poll get_ingest_status.
+ * Enqueue a source for ingestion. Website, file, folder, youtube, and transcript
+ * kinds are implemented. Returns a job_id immediately so the host can poll get_ingest_status.
  */
 export const addSourceInputSchema = z.object({
   course_id: z.string().describe("Course slug returned by add_course"),
   kind: z
     .enum(["website", "file", "folder", "youtube", "transcript", "canvas"])
-    .describe("Source type. Supports file, folder, youtube, and transcript."),
+    .describe("Source type. website, file, folder, youtube, and transcript are implemented."),
   uri: z
     .string()
     .describe(
-      "YouTube watch/playlist URL, transcript .vtt/.srt path or URL, canvas://course/<id>, or an absolute filesystem path / file:// URI for file and folder",
+      "Public course website URL, YouTube watch/playlist URL, transcript .vtt/.srt path or URL, canvas://course/<id>, or an absolute filesystem path / file:// URI for file and folder",
     ),
   options: z
     .object({
@@ -52,15 +51,16 @@ export function registerAddSource(
   server: McpServer,
   repo: CourseRepo,
   queue: IngestQueue,
-  options: { allowLocalPaths?: boolean } = {},
+  options: { allowLocalPaths?: boolean; allowPrivateNetwork?: boolean } = {},
 ): void {
   const allowLocalPaths = options.allowLocalPaths ?? true;
+  const allowPrivateNetwork = options.allowPrivateNetwork ?? true;
   server.registerTool(
     "add_source",
     {
       title: "Add source",
       description:
-        "Enqueue a course source for ingestion. File/folder index local PDF, PPTX, Markdown, and TXT. youtube fetches captions (timestamps + youtu.be deep links). transcript indexes a local or remote VTT/SRT. Returns a job_id; poll get_ingest_status.",
+        "Enqueue a course source for ingestion. website crawls a public course site (robots, same-site scope, linked PDFs/PPTX). File/folder index local PDF, PPTX, Markdown, and TXT. youtube fetches captions (timestamps + youtu.be deep links). transcript indexes a local or remote VTT/SRT. Returns a job_id; poll get_ingest_status.",
       inputSchema: addSourceInputSchema,
       outputSchema: addSourceOutputSchema,
       annotations: {
@@ -72,12 +72,23 @@ export function registerAddSource(
     },
     async ({ course_id, kind, uri, options }) => {
       try {
-        if (/^https?:\/\//i.test(uri)) {
+        if (/^https?:\/\//i.test(uri) && !allowPrivateNetwork) {
           assertPublicUrl(uri);
         }
         const pending = KIND_MILESTONE[kind];
         if (pending) {
           return fail(pending);
+        }
+        if (kind === "website") {
+          let parsed: URL;
+          try {
+            parsed = new URL(uri);
+          } catch {
+            throw new RepoError(`Invalid website URL "${uri}". Use an http(s) URL.`);
+          }
+          if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+            throw new RepoError(`Website URI must be http(s); got ${parsed.protocol}`);
+          }
         }
         if (kind === "file" || kind === "folder") {
           if (!allowLocalPaths) {

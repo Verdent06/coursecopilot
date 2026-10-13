@@ -76,6 +76,18 @@ describe("citations", () => {
     expect(web.url).toBe("https://example.edu/lec#pumping");
     expect(web.label).toContain("Pumping Lemma");
 
+    const webPdf = buildCitation({
+      ...base,
+      source_kind: "website",
+      mime: MIME_PDF,
+      doc_title: "Lecture 7: Nonregular languages",
+      doc_url: "https://eecs376.org/lec07.pdf",
+      heading_path: "Page 14",
+      locator: { url: "https://eecs376.org/lec07.pdf", page: 14 },
+    });
+    expect(webPdf.kind).toBe("pdf");
+    expect(webPdf.url).toBe("https://eecs376.org/lec07.pdf#page=14");
+
     const yt = buildCitation({
       ...base,
       source_kind: "youtube",

@@ -3,9 +3,11 @@ import { EMBED_BATCH } from "../retrieve/config.js";
 import { newId } from "../util/ids.js";
 import { log } from "../util/log.js";
 import { nowIso } from "../util/time.js";
+import type { FetchLike } from "./crawl/fetch.js";
 import type { Embedder } from "./embed.js";
 import { ingestFileSource } from "./sources/file.js";
 import { ingestTranscriptSource } from "./sources/transcript.js";
+import { ingestWebsiteSource } from "./sources/website.js";
 import { ingestYoutubeSource } from "./sources/youtube.js";
 import { extractAndAssignTopics } from "./topics.js";
 import type { IngestResult, SkipReason } from "./types.js";
@@ -16,10 +18,12 @@ export type IngestQueueOptions = {
   allowLocalPaths?: boolean;
   embedder?: Embedder | null;
   youtube?: YoutubeClient;
+  allowPrivateNetwork?: boolean;
+  crawlDelayMs?: number;
+  fetchFn?: FetchLike;
 };
 
 const UNIMPLEMENTED: Record<string, string> = {
-  website: "website ingestion is not implemented yet (milestone M4)",
   canvas: "Canvas ingestion is not implemented yet (milestone M6)",
 };
 
@@ -31,10 +35,16 @@ export class IngestQueue {
   private tail: Promise<void> = Promise.resolve();
   private readonly allowLocalPaths: boolean;
   private readonly embedder: Embedder | null;
+  private readonly allowPrivateNetwork: boolean;
+  private readonly crawlDelayMs: number | undefined;
+  private readonly fetchFn: FetchLike | undefined;
 
   constructor(private readonly opts: IngestQueueOptions) {
     this.allowLocalPaths = opts.allowLocalPaths ?? true;
     this.embedder = opts.embedder ?? null;
+    this.allowPrivateNetwork = opts.allowPrivateNetwork ?? true;
+    this.crawlDelayMs = opts.crawlDelayMs;
+    this.fetchFn = opts.fetchFn;
   }
 
   /** Validate kind and persist a queued job, then schedule it. */
@@ -50,6 +60,7 @@ export class IngestQueue {
     if (
       source.kind !== "file" &&
       source.kind !== "folder" &&
+      source.kind !== "website" &&
       source.kind !== "youtube" &&
       source.kind !== "transcript"
     ) {
@@ -106,7 +117,12 @@ export class IngestQueue {
     try {
       const result: IngestResult = await this.ingest(job.source_id, persistProgress);
       try {
-        await this.embedSource(job.source_id, persistProgress, result.skipped);
+        await this.embedSource(
+          job.source_id,
+          persistProgress,
+          result.skipped,
+          result.newChunkIds,
+        );
       } catch (err) {
         log.warn("embedding step failed; leaving FTS-only index", err);
       }
@@ -130,6 +146,8 @@ export class IngestQueue {
           docs: result.docs,
           chunks: result.chunks,
           skipped: result.skipped,
+          unchanged: result.unchanged ?? 0,
+          suggested_exams: result.suggestedExams ?? [],
         }),
       });
       this.opts.repo.updateSource(job.source_id, {
@@ -157,6 +175,18 @@ export class IngestQueue {
     const source = this.opts.repo.getSource(sourceId);
     if (!source) {
       throw new RepoError(`Unknown source_id "${sourceId}"`);
+    }
+    if (source.kind === "website") {
+      return ingestWebsiteSource(
+        {
+          repo: this.opts.repo,
+          allowPrivateNetwork: this.allowPrivateNetwork,
+          delayMs: this.crawlDelayMs,
+          fetchFn: this.fetchFn,
+        },
+        sourceId,
+        persistProgress,
+      );
     }
     if (source.kind === "file" || source.kind === "folder") {
       return ingestFileSource(
@@ -186,12 +216,16 @@ export class IngestQueue {
     sourceId: string,
     persistProgress: (progress: number, message: string, skipped: SkipReason[]) => void,
     skipped: SkipReason[],
+    newChunkIds?: number[],
   ): Promise<void> {
     const embedder = this.embedder;
     if (!embedder || embedder.degraded) {
       return;
     }
-    const chunks = this.opts.repo.listChunksForSource(sourceId);
+    const chunks =
+      newChunkIds === undefined
+        ? this.opts.repo.listChunksForSource(sourceId)
+        : this.opts.repo.listChunksByIds(newChunkIds);
     if (chunks.length === 0) {
       return;
     }
@@ -244,14 +278,21 @@ function finishState(result: IngestResult): "done" | "partial" | "error" {
 
 function finishMessage(state: string, result: IngestResult): string {
   const skip = result.skipped.length;
+  const unchangedCount = result.unchanged ?? 0;
+  const unchanged = unchangedCount > 0 ? `, ${unchangedCount} unchanged` : "";
+  const exams = result.suggestedExams ?? [];
+  const examNote =
+    exams.length > 0
+      ? `. Suggested exams (not set automatically): ${exams.map((e) => (e.date ? `${e.name} ${e.date}` : e.name)).join(", ")}. Call set_exam to add them.`
+      : "";
   if (state === "error") {
     return `Failed: 0 documents ingested (${result.errors} error(s), ${skip} skipped)`;
   }
   if (state === "partial") {
-    return `Partial: ${result.docs} document(s), ${result.chunks} chunk(s), ${result.errors} error(s), ${skip} skipped`;
+    return `Partial: ${result.docs} document(s), ${result.chunks} chunk(s), ${result.errors} error(s), ${skip} skipped${unchanged}${examNote}`;
   }
-  if (skip > 0) {
-    return `Indexed ${result.docs} document(s), ${result.chunks} chunk(s), ${skip} skipped`;
+  if (skip > 0 || unchangedCount > 0) {
+    return `Indexed ${result.docs} document(s), ${result.chunks} chunk(s), ${skip} skipped${unchanged}${examNote}`;
   }
-  return `Indexed ${result.docs} document(s), ${result.chunks} chunk(s)`;
+  return `Indexed ${result.docs} document(s), ${result.chunks} chunk(s)${examNote}`;
 }

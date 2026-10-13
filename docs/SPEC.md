@@ -851,6 +851,21 @@ Chosen while implementing remote / HTTP mode.
 5. **Quick tunnels do not support SSE** (Cloudflare docs). MCP POST still works. Gemini Spark sometimes opens a GET SSE stream; if that fails on a quick tunnel, use Render/Fly. `cloudflared` is Apache-2.0; `coursecopilot tunnel` downloads it from GitHub Releases when missing.
 6. **HTTP e2e is in vitest** (`test/e2e/http.test.ts`), so the existing 6-job CI matrix runs it. Live claude.ai / ChatGPT / Gemini Spark connections remain M12.
 7. **`search` / `fetch`.** OpenAI’s documented shapes ([MCP search/fetch](https://developers.openai.com/api/docs/mcp)): `search({query}) → {results:[{id,title,url}]}` and `fetch({id}) → {id,title,text,url,metadata?}`. Thin aliases over `search_course` / `get_chunk` (`id` is the chunk id as a string).
-8. **Local paths default off on HTTP.** `--allow-path` / `COURSECOPILOT_ALLOW_PATH=1` re-enables file/folder ingest and local `kind: transcript` paths. YouTube URLs and `http(s)` transcripts still work. SSRF guard (`src/util/ssrf.ts`) rejects private/loopback/link-local/metadata hostnames on `http(s)` URIs in `add_source` without DNS; crawl-time DNS rebinding stays M4.
+8. **Local paths default off on HTTP.** `--allow-path` / `COURSECOPILOT_ALLOW_PATH=1` re-enables file/folder ingest and local `kind: transcript` paths. YouTube URLs and `http(s)` transcripts still work. SSRF guard (`src/util/ssrf.ts`) rejects private/loopback/link-local/metadata hostnames on `http(s)` URIs in `add_source` without DNS when `allowPrivateNetwork` is false (HTTP default). Stdio leaves that flag true so fixture crawls of loopback work. Crawl-time DNS rebinding is `assertSafeUrl`.
 9. **When `PORT` is set** (Render/Fly), `--bind` defaults to `0.0.0.0` and Host-header allowlisting is skipped (any Host). Localhost binds allow `localhost` / `127.0.0.1` / `[::1]` plus `*.trycloudflare.com`.
 10. **Shared `AppContext`.** HTTP creates one `AppContext` (ingest queue, hybrid search, `LearnService`) and a fresh `McpServer` per request, so M5 YouTube/transcript kinds and M8 quiz/mastery tools are on the same Streamable HTTP surface as `search`/`fetch`.
+
+---
+
+## 28. Spec amendments (M4)
+
+Chosen while implementing the website crawler.
+
+1. **`schema_version` stays 2.** Incremental sync uses existing `documents.content_hash` plus `etag` / `last_modified` in `meta_json`. No migration.
+2. **SSRF is remote-mode-only.** Stdio (`allowPrivateNetwork` default true) may crawl loopback so the fixture-site tests work. Remote/HTTP mode (M9) must pass `allowPrivateNetwork: false`. `COURSECOPILOT_CRAWL_DELAY_MS` overrides the 500 ms/host default (tests set it to 0).
+3. **Linked files share the website source.** PDFs/PPTX linked from HTML are stored as documents of the same `kind:'website'` source and go through the M2 extractors. Citation kind is taken from MIME first, so a course-site PDF cites as `pdf` with `url#page=N`, not as `web`.
+4. **Re-embed only new chunks.** `sync_course` re-queues the source. Matching sha256 (or HTTP 304 from ETag) skips extract/embed. The job message includes `N unchanged`. `get_ingest_status.docs`/`chunks` are the current index sizes for that source after the job.
+5. **JS-lite pages are flagged, not always dropped.** Under 200 characters of extracted text adds `skipped: may need JS rendering`. If there is still a section, it is indexed. Login pages (`input[type=password]` or SSO hosts after redirect) and `robots.txt` disallows are not indexed.
+6. **Exam dates are suggested only.** Calendar/schedule tables are kept as Markdown. Regex hits for Midterm/Exam/Final near a date appear in the job message; `set_exam` is never called automatically.
+7. **DOCX links are skipped.** Spec §9.1 mentions DOCX; M2 did not add a DOCX extractor. Linked `.docx` is reported as unsupported. PDF and PPTX are the M4 file hops.
+8. **Fetch is global `fetch` (Node's undici).** No extra `undici` dependency. User-Agent is `CourseCopilot/<version> (+https://github.com/Verdent06/coursecopilot)`. 429/503 retry up to 3 times with exponential backoff.

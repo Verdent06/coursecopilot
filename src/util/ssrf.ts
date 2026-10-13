@@ -1,3 +1,4 @@
+import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { RepoError } from "../db/repo.js";
 
@@ -6,8 +7,15 @@ import { RepoError } from "../db/repo.js";
  * caller cannot make the server fetch internal networks (spec §13).
  *
  * Hostname and IP-literal checks are synchronous and offline. DNS resolution
- * of public hostnames to a private address is M4 crawl-time (`assertResolvedPublic`).
+ * of public hostnames to a private address is crawl-time (`assertSafeUrl`).
  */
+
+export class SsrfError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SsrfError";
+  }
+}
 
 const BLOCKED_HOSTS = new Set([
   "localhost",
@@ -128,6 +136,56 @@ export function assertPublicUrl(urlString: string): URL {
     );
   }
   return parsed;
+}
+
+export type SafeUrlOptions = {
+  /** When true (stdio default), loopback and RFC1918 hosts are allowed. Remote mode sets false. */
+  allowPrivateNetwork: boolean;
+};
+
+/**
+ * Crawl-time SSRF: http(s) only, optional private-network allow, then DNS so a
+ * public hostname cannot rebind to a private IP (spec §13 / M4).
+ */
+export async function assertSafeUrl(raw: string, opts: SafeUrlOptions): Promise<URL> {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new SsrfError(`Invalid URL "${raw}"`);
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new SsrfError(`Refusing non-http(s) URL (${url.protocol})`);
+  }
+  if (opts.allowPrivateNetwork) {
+    return url;
+  }
+  if (url.username || url.password) {
+    throw new SsrfError("URLs with userinfo are not allowed");
+  }
+  if (isBlockedHostname(url.hostname)) {
+    throw new SsrfError(
+      `Refusing private or loopback host "${url.hostname}". Website crawling in remote mode cannot target local/private IPs.`,
+    );
+  }
+  try {
+    const addrs = await lookup(url.hostname, { all: true });
+    for (const row of addrs) {
+      if (isPrivateIp(row.address)) {
+        throw new SsrfError(
+          `Refusing URL that resolves to private IP ${row.address} (${url.hostname})`,
+        );
+      }
+    }
+  } catch (err) {
+    if (err instanceof SsrfError) {
+      throw err;
+    }
+    throw new SsrfError(
+      `Could not resolve "${url.hostname}": ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  return url;
 }
 
 function stripIpv6Brackets(value: string): string {

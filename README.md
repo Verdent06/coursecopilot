@@ -4,7 +4,7 @@ Your classes, inside the AI you already use. Open-source MCP connector that turn
 
 No API key. The host AI does all generation; this server fetches, indexes, retrieves, and stores learning state.
 
-**Status:** M0–M3 (scaffold, database, files pipeline, hybrid search), **M5 (YouTube captions + VTT/SRT)**, **M8 (learning layer)**, and **M9 (remote / HTTP mode)** are implemented. Website crawl, Canvas, and packs land in other milestones — see [docs/SPEC.md](docs/SPEC.md).
+**Status:** M0–M5 (scaffold, database, files, hybrid search, website crawler, YouTube captions + VTT/SRT), **M8 (learning layer)**, and **M9 (remote / HTTP mode)** are implemented. Canvas and packs land in other milestones — see [docs/SPEC.md](docs/SPEC.md).
 
 ## Requirements
 
@@ -50,7 +50,7 @@ Exact click paths, official-doc citations, and plan/eligibility gates: **[docs/r
 
 ChatGPT support needs a plan with developer mode — check [OpenAI's page](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt). Gemini app custom apps need Spark, a personal US Google account, 18+, English, Keep Activity on; school accounts should use Gemini CLI instead.
 
-## Tools (M0–M3, M5, M8, M9)
+## Tools (M0–M5, M8, M9)
 
 | Tool | Role |
 |---|---|
@@ -58,9 +58,10 @@ ChatGPT support needs a plan with developer mode — check [OpenAI's page](https
 | `add_course` | Create a course |
 | `list_courses` | List courses, source/chunk counts, exams |
 | `set_exam` | Add or replace an exam date |
-| `add_source` | Enqueue a source. `file`/`folder` (PDF, PPTX, Markdown, TXT), `youtube` (captions with timestamps), `transcript` (VTT/SRT). Website and Canvas land later. |
+| `add_source` | Enqueue a source. `website` (robots, same-site crawl, linked PDFs/PPTX), `file`/`folder` (PDF, PPTX, Markdown, TXT), `youtube` (captions with timestamps), `transcript` (VTT/SRT). Canvas lands later. |
 | `get_ingest_status` | Poll an ingest job (`docs`, `chunks`, `skipped`) |
 | `list_sources` | List sources on a course |
+| `sync_course` | Incremental re-fetch (unchanged documents skip re-embedding) |
 | `remove_source` | Delete a source and its chunks |
 | `search_course` | Hybrid keyword + vector search with citations (page, slide, or `youtu.be/ID?t=Ns`) |
 | `get_chunk` / `get_document` | Fetch a cited chunk (plus neighbors) or a full document |
