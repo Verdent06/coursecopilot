@@ -42,7 +42,10 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "test": "vitest run",
-    "check:no-llm": "node scripts/check-no-llm-sdks.mjs"
+    "check:no-llm": "node scripts/check-no-llm-sdks.mjs",
+    "packs:index": "tsx scripts/generate-pack-index.ts",
+    "packs:validate": "tsx scripts/validate-packs.ts",
+    "packs:check-urls": "tsx scripts/check-pack-urls.ts"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",

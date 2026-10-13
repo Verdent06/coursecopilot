@@ -1,0 +1,228 @@
+{
+  "id": "mit-6.042j-f10",
+  "name": "Mathematics for Computer Science",
+  "institution": "MIT OpenCourseWare",
+  "term": "Fall 2010",
+  "license_note": "Materials CC BY-NC-SA on ocw.mit.edu; this pack contains links only, not course content.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2010/",
+      "max_depth": 2,
+      "max_pages": 80
+    },
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PLB7540DEDD482705B",
+      "title": "MIT 6.042J Mathematics for Computer Science, Fall 2010"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Introduction and proofs",
+      "topics": [
+        "Introduction and proofs",
+        "Proofs"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Induction",
+      "topics": [
+        "Induction"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Strong induction",
+      "topics": [
+        "Strong induction"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Number theory I",
+      "topics": [
+        "Number theory I",
+        "Number theory"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Number theory II",
+      "topics": [
+        "Number theory II",
+        "Modular arithmetic"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Graph theory and coloring",
+      "topics": [
+        "Graph theory and coloring",
+        "Graph theory",
+        "Graph coloring"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Matching problems",
+      "topics": [
+        "Matching problems",
+        "Matching"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Graph theory II: minimum spanning trees",
+      "topics": [
+        "Graph theory II: minimum spanning trees",
+        "Minimum spanning trees"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Communication networks",
+      "topics": [
+        "Communication networks"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Graph theory III",
+      "topics": [
+        "Graph theory III",
+        "Graph theory"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Relations, partial orders, and scheduling",
+      "topics": [
+        "Relations, partial orders, and scheduling",
+        "Partial orders",
+        "Scheduling"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Sums",
+      "topics": [
+        "Sums"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "Sums and asymptotics",
+      "topics": [
+        "Sums and asymptotics",
+        "Asymptotics"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "Divide and conquer recurrences",
+      "topics": [
+        "Divide and conquer recurrences",
+        "Recurrences",
+        "Divide and conquer"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "Linear recurrences",
+      "topics": [
+        "Linear recurrences"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "Counting rules I",
+      "topics": [
+        "Counting rules I",
+        "Counting"
+      ]
+    },
+    {
+      "lecture": 17,
+      "title": "Counting rules II",
+      "topics": [
+        "Counting rules II",
+        "Counting"
+      ]
+    },
+    {
+      "lecture": 18,
+      "title": "Probability introduction",
+      "topics": [
+        "Probability introduction",
+        "Probability"
+      ]
+    },
+    {
+      "lecture": 19,
+      "title": "Conditional probability",
+      "topics": [
+        "Conditional probability"
+      ]
+    },
+    {
+      "lecture": 20,
+      "title": "Independence",
+      "topics": [
+        "Independence"
+      ]
+    },
+    {
+      "lecture": 21,
+      "title": "Random variables",
+      "topics": [
+        "Random variables"
+      ]
+    },
+    {
+      "lecture": 22,
+      "title": "Expectation I",
+      "topics": [
+        "Expectation I",
+        "Expectation"
+      ]
+    },
+    {
+      "lecture": 23,
+      "title": "Expectation II",
+      "topics": [
+        "Expectation II",
+        "Linearity of expectation"
+      ]
+    },
+    {
+      "lecture": 24,
+      "title": "Large deviations",
+      "topics": [
+        "Large deviations"
+      ]
+    },
+    {
+      "lecture": 25,
+      "title": "Random walks",
+      "topics": [
+        "Random walks"
+      ]
+    }
+  ],
+  "exams": [
+    {
+      "name": "Midterm"
+    },
+    {
+      "name": "Final"
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

@@ -1,0 +1,211 @@
+{
+  "id": "harvard-cs50x",
+  "name": "CS50x: Introduction to Computer Science",
+  "institution": "Harvard University",
+  "term": "2026",
+  "license_note": "CS50 materials are Creative Commons BY-NC-SA on cs50.harvard.edu; this pack contains links only.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/2026/",
+      "max_depth": 2,
+      "max_pages": 60,
+      "include_prefix": "https://cs50.harvard.edu/x/"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/0/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 0,
+      "title": "CS50x notes week 0"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/1/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 1,
+      "title": "CS50x notes week 1"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/2/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 2,
+      "title": "CS50x notes week 2"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/3/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 3,
+      "title": "CS50x notes week 3"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/4/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 4,
+      "title": "CS50x notes week 4"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/5/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 5,
+      "title": "CS50x notes week 5"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/6/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 6,
+      "title": "CS50x notes week 6"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/7/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 7,
+      "title": "CS50x notes week 7"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/8/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 8,
+      "title": "CS50x notes week 8"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/9/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 9,
+      "title": "CS50x notes week 9"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/10/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 10,
+      "title": "CS50x notes week 10"
+    },
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T380hlTqAU8HfvVepCcjCqTg6",
+      "title": "CS50x 2026 Lectures"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 0,
+      "title": "Scratch",
+      "topics": [
+        "Scratch",
+        "Computational thinking"
+      ]
+    },
+    {
+      "lecture": 1,
+      "title": "C",
+      "topics": [
+        "C",
+        "Source code",
+        "Conditionals",
+        "Loops"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Arrays",
+      "topics": [
+        "Arrays"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Algorithms",
+      "topics": [
+        "Algorithms",
+        "Searching",
+        "Sorting"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Memory",
+      "topics": [
+        "Memory",
+        "Pointers"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Data Structures",
+      "topics": [
+        "Data Structures",
+        "Data structures",
+        "Linked lists",
+        "Hash tables",
+        "Tries"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Python",
+      "topics": [
+        "Python"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "SQL",
+      "topics": [
+        "SQL",
+        "Databases"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "HTML, CSS, JavaScript",
+      "topics": [
+        "HTML, CSS, JavaScript",
+        "HTML",
+        "CSS",
+        "JavaScript"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Flask",
+      "topics": [
+        "Flask",
+        "Web applications"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "The End",
+      "topics": [
+        "The End",
+        "Cybersecurity",
+        "Final project"
+      ]
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

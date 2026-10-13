@@ -1,0 +1,155 @@
+{
+  "generated_at": "2026-10-13T23:06:03.245Z",
+  "packs": [
+    {
+      "id": "3b1b-linear-algebra",
+      "name": "Essence of Linear Algebra",
+      "term": "2016",
+      "institution": "3Blue1Brown",
+      "version": "1.0.0",
+      "source_count": 2,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/3b1b-linear-algebra.json"
+    },
+    {
+      "id": "berkeley-cs61a",
+      "name": "Structure and Interpretation of Computer Programs",
+      "term": "Fall 2026",
+      "institution": "UC Berkeley",
+      "version": "1.0.0",
+      "source_count": 1,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/berkeley-cs61a.json"
+    },
+    {
+      "id": "cmu-15-445-f25",
+      "name": "Intro to Database Systems",
+      "term": "Fall 2025",
+      "institution": "Carnegie Mellon University",
+      "version": "1.0.0",
+      "source_count": 2,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/cmu-15-445-f25.json"
+    },
+    {
+      "id": "harvard-cs50p",
+      "name": "CS50's Introduction to Programming with Python",
+      "term": "2022",
+      "institution": "Harvard University",
+      "version": "1.0.0",
+      "source_count": 12,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/harvard-cs50p.json"
+    },
+    {
+      "id": "harvard-cs50x",
+      "name": "CS50x: Introduction to Computer Science",
+      "term": "2026",
+      "institution": "Harvard University",
+      "version": "1.0.0",
+      "source_count": 13,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/harvard-cs50x.json"
+    },
+    {
+      "id": "mit-18.06-s10",
+      "name": "Linear Algebra",
+      "term": "Spring 2010",
+      "institution": "MIT OpenCourseWare",
+      "version": "1.0.0",
+      "source_count": 2,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/mit-18.06-s10.json"
+    },
+    {
+      "id": "mit-6.0001-f16",
+      "name": "Introduction to Computer Science and Programming in Python",
+      "term": "Fall 2016",
+      "institution": "MIT OpenCourseWare",
+      "version": "1.0.0",
+      "source_count": 2,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/mit-6.0001-f16.json"
+    },
+    {
+      "id": "mit-6.006-s20",
+      "name": "Introduction to Algorithms",
+      "term": "Spring 2020",
+      "institution": "MIT OpenCourseWare",
+      "version": "1.0.0",
+      "source_count": 2,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/mit-6.006-s20.json"
+    },
+    {
+      "id": "mit-6.034-f10",
+      "name": "Artificial Intelligence",
+      "term": "Fall 2010",
+      "institution": "MIT OpenCourseWare",
+      "version": "1.0.0",
+      "source_count": 2,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/mit-6.034-f10.json"
+    },
+    {
+      "id": "mit-6.042j-f10",
+      "name": "Mathematics for Computer Science",
+      "term": "Fall 2010",
+      "institution": "MIT OpenCourseWare",
+      "version": "1.0.0",
+      "source_count": 2,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/mit-6.042j-f10.json"
+    },
+    {
+      "id": "mit-6.045j-s11",
+      "name": "Automata, Computability, and Complexity",
+      "term": "Spring 2011",
+      "institution": "MIT OpenCourseWare",
+      "version": "1.0.0",
+      "source_count": 1,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/mit-6.045j-s11.json"
+    },
+    {
+      "id": "mit-missing-semester",
+      "name": "The Missing Semester of Your CS Education",
+      "term": "IAP 2026",
+      "institution": "MIT",
+      "version": "1.0.0",
+      "source_count": 1,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/mit-missing-semester.json"
+    },
+    {
+      "id": "stanford-cs229",
+      "name": "Machine Learning",
+      "term": "Public notes",
+      "institution": "Stanford University",
+      "version": "1.0.0",
+      "source_count": 3,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/stanford-cs229.json"
+    },
+    {
+      "id": "stanford-cs231n",
+      "name": "Deep Learning for Computer Vision",
+      "term": "Spring 2025",
+      "institution": "Stanford University",
+      "version": "1.0.0",
+      "source_count": 3,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/stanford-cs231n.json"
+    },
+    {
+      "id": "umich-eecs376",
+      "name": "Foundations of Computer Science",
+      "term": "Fall 2026",
+      "institution": "University of Michigan",
+      "version": "1.0.0",
+      "source_count": 8,
+      "verified": true,
+      "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/umich-eecs376.json"
+    }
+  ]
+}

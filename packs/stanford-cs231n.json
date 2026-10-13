@@ -1,0 +1,185 @@
+{
+  "id": "stanford-cs231n",
+  "name": "Deep Learning for Computer Vision",
+  "institution": "Stanford University",
+  "term": "Spring 2025",
+  "license_note": "Public course notes at cs231n.github.io and schedule at cs231n.stanford.edu; this pack contains links only.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://cs231n.github.io/",
+      "max_depth": 2,
+      "max_pages": 40
+    },
+    {
+      "kind": "website",
+      "url": "https://cs231n.stanford.edu/2025/schedule.html",
+      "max_depth": 1,
+      "max_pages": 20
+    },
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PLoROMvodv4rOmsNzYBMe0gJY2XS8AQg16",
+      "title": "Stanford CS231n Spring 2025"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Introduction",
+      "topics": [
+        "Introduction",
+        "Computer vision"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Image Classification with Linear Classifiers",
+      "topics": [
+        "Image Classification with Linear Classifiers",
+        "Image classification",
+        "Linear classifiers"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Regularization and Optimization",
+      "topics": [
+        "Regularization and Optimization",
+        "Regularization",
+        "Optimization"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Neural Networks and Backpropagation",
+      "topics": [
+        "Neural Networks and Backpropagation",
+        "Neural networks",
+        "Backpropagation"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Image Classification with CNNs",
+      "topics": [
+        "Image Classification with CNNs",
+        "CNNs"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "CNN Architectures",
+      "topics": [
+        "CNN Architectures",
+        "CNN architectures"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Recurrent Neural Networks",
+      "topics": [
+        "Recurrent Neural Networks",
+        "RNNs",
+        "LSTM"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Attention and Transformers",
+      "topics": [
+        "Attention and Transformers",
+        "Attention",
+        "Transformers",
+        "ViT"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Object Detection, Image Segmentation, Visualizing and Understanding",
+      "topics": [
+        "Object Detection, Image Segmentation, Visualizing and Understanding",
+        "Object detection",
+        "Segmentation"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Video Understanding",
+      "topics": [
+        "Video Understanding",
+        "Video understanding"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Large Scale Distributed Training",
+      "topics": [
+        "Large Scale Distributed Training",
+        "Distributed training"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Self-supervised Learning",
+      "topics": [
+        "Self-supervised Learning",
+        "Self-supervised learning"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "Generative Models 1",
+      "topics": [
+        "Generative Models 1",
+        "Generative models"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "Generative Models 2",
+      "topics": [
+        "Generative Models 2",
+        "Diffusion",
+        "GANs"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "3D Vision",
+      "topics": [
+        "3D Vision",
+        "3D vision"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "Vision and Language",
+      "topics": [
+        "Vision and Language",
+        "Vision and language"
+      ]
+    },
+    {
+      "lecture": 17,
+      "title": "Robot Learning",
+      "topics": [
+        "Robot Learning",
+        "Robot learning"
+      ]
+    },
+    {
+      "lecture": 18,
+      "title": "Human-Centered AI",
+      "topics": [
+        "Human-Centered AI",
+        "Human-centered AI"
+      ]
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

@@ -1,0 +1,133 @@
+{
+  "id": "mit-6.0001-f16",
+  "name": "Introduction to Computer Science and Programming in Python",
+  "institution": "MIT OpenCourseWare",
+  "term": "Fall 2016",
+  "license_note": "Materials CC BY-NC-SA on ocw.mit.edu; this pack contains links only, not course content.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://ocw.mit.edu/courses/6-0001-introduction-to-computer-science-and-programming-in-python-fall-2016/",
+      "max_depth": 2,
+      "max_pages": 60
+    },
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PLUl4u3cNGP63WbdFxL8giv4yhgdMGaZNA",
+      "title": "MIT 6.0001 Introduction to Computer Science and Programming in Python, Fall 2016"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "What is Computation?",
+      "topics": [
+        "What is Computation?",
+        "Computation"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Branching and Iteration",
+      "topics": [
+        "Branching and Iteration",
+        "Branching",
+        "Iteration"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "String Manipulation, Guess and Check, Approximations, Bisection",
+      "topics": [
+        "String Manipulation, Guess and Check, Approximations, Bisection",
+        "Strings",
+        "Bisection"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Decomposition, Abstraction, and Functions",
+      "topics": [
+        "Decomposition, Abstraction, and Functions",
+        "Functions",
+        "Abstraction"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Tuples, Lists, Aliasing, Mutability, and Cloning",
+      "topics": [
+        "Tuples, Lists, Aliasing, Mutability, and Cloning",
+        "Lists",
+        "Mutability"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Recursion and Dictionaries",
+      "topics": [
+        "Recursion and Dictionaries",
+        "Recursion",
+        "Dictionaries"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Testing, Debugging, Exceptions, and Assertions",
+      "topics": [
+        "Testing, Debugging, Exceptions, and Assertions",
+        "Testing",
+        "Debugging",
+        "Exceptions"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Object Oriented Programming",
+      "topics": [
+        "Object Oriented Programming",
+        "Object-oriented programming"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Python Classes and Inheritance",
+      "topics": [
+        "Python Classes and Inheritance",
+        "Classes",
+        "Inheritance"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Understanding Program Efficiency, Part 1",
+      "topics": [
+        "Understanding Program Efficiency, Part 1",
+        "Complexity",
+        "Big-O"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Understanding Program Efficiency, Part 2",
+      "topics": [
+        "Understanding Program Efficiency, Part 2",
+        "Complexity"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Searching and Sorting",
+      "topics": [
+        "Searching and Sorting",
+        "Searching",
+        "Sorting"
+      ]
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

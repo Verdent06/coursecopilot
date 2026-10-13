@@ -5,8 +5,12 @@ import * as z from "zod/v4";
 export const PACK_SCHEMA_VERSION = 1;
 export const MAX_PACK_SOURCES = 500;
 export const MAX_STRING = 4000;
+/** In-repo registry (M11). Override with COURSECOPILOT_PACK_REGISTRY. */
 export const DEFAULT_REGISTRY_URL =
-  "https://raw.githubusercontent.com/Verdent06/coursecopilot-packs/main/index.json";
+  "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/index.json";
+/** Directory on the default branch that holds `<id>.json` pack files. */
+export const DEFAULT_PACK_RAW_BASE =
+  "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs";
 export const REGISTRY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 export const REGISTRY_ENV = "COURSECOPILOT_PACK_REGISTRY";
 

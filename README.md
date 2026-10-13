@@ -4,7 +4,7 @@ Your classes, inside the AI you already use. Open-source MCP connector that turn
 
 No API key. The host AI does all generation; this server fetches, indexes, retrieves, and stores learning state.
 
-**Status:** M0–M5 (scaffold, database, files, hybrid search, website crawler, YouTube captions + VTT/SRT), **M7 (course packs)**, **M8 (learning layer)**, **M9 (remote / HTTP mode)**, and **UMich CAEN Lecture Capture (`leccap`)** are implemented. Canvas lands in M6 — see [docs/SPEC.md](docs/SPEC.md).
+**Status:** M0–M5 (scaffold, database, files, hybrid search, website crawler, YouTube captions + VTT/SRT), **M7 (course packs)**, **M8 (learning layer)**, **M9 (remote / HTTP mode)**, **M11 (in-repo pack registry + starter packs)**, and **UMich CAEN Lecture Capture (`leccap`)** are implemented. Canvas lands in M6 — see [docs/SPEC.md](docs/SPEC.md).
 
 ## Requirements
 
@@ -55,7 +55,7 @@ ChatGPT support needs a plan with developer mode — check [OpenAI's page](https
 A pack is a small JSON/YAML manifest: course id/name/term, **http(s) source URLs** (website, YouTube, PDF, transcript), and a lecture → topic map. It contains **no copyrighted content**. Classmates download materials from the original sources.
 
 ```bash
-npx coursecopilot add-pack mit-6.045          # registry id (when the registry exists)
+npx coursecopilot add-pack harvard-cs50x      # registry id
 npx coursecopilot add-pack ./my-course.json   # local manifest
 npx coursecopilot export-pack eecs376-f26 -o pack.json
 npx coursecopilot list-packs
@@ -63,7 +63,9 @@ npx coursecopilot list-packs
 
 `export-pack` keeps public website / YouTube / PDF / transcript URLs. It **drops Canvas, login-gated lecture-capture (leccap), and local files**, and may add a `connect_yourself` placeholder so the importer attaches those themselves.
 
-Registry index (cached 24h): `COURSECOPILOT_PACK_REGISTRY` or the default `https://raw.githubusercontent.com/Verdent06/coursecopilot-packs/main/index.json`. Schema: `packs/schema/pack.schema.json`.
+Registry (in this repo, cached 24h): `COURSECOPILOT_PACK_REGISTRY` or the default [`https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/index.json`](https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/index.json). Schema: [`packs/schema/pack.schema.json`](packs/schema/pack.schema.json). Contribute a pack: [`CONTRIBUTING-packs.md`](CONTRIBUTING-packs.md). Details: [`docs/packs.md`](docs/packs.md).
+
+Starter packs (open courses only): `harvard-cs50x`, `harvard-cs50p`, `mit-6.006-s20`, `mit-6.042j-f10`, `mit-18.06-s10`, `mit-6.045j-s11`, `mit-6.0001-f16`, `mit-6.034-f10`, `mit-missing-semester`, `stanford-cs229`, `stanford-cs231n`, `berkeley-cs61a`, `cmu-15-445-f25`, `3b1b-linear-algebra`, `umich-eecs376`.
 
 ## Tools (M0–M5, M7–M9)
 

@@ -1,0 +1,218 @@
+{
+  "id": "mit-6.045j-s11",
+  "name": "Automata, Computability, and Complexity",
+  "institution": "MIT OpenCourseWare",
+  "term": "Spring 2011",
+  "license_note": "Materials CC BY-NC-SA on ocw.mit.edu; this pack contains links only, not course content.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://ocw.mit.edu/courses/6-045j-automata-computability-and-complexity-spring-2011/",
+      "max_depth": 2,
+      "max_pages": 80
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Introduction",
+      "topics": [
+        "Introduction"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Logic, circuits, and gates",
+      "topics": [
+        "Logic, circuits, and gates",
+        "Logic",
+        "Circuits"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Deterministic finite automata (DFAs) and nondeterministic finite automata (NFAs)",
+      "topics": [
+        "Deterministic finite automata (DFAs) and nondeterministic finite automata (NFAs)",
+        "DFA",
+        "NFA"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "NFAs and regular expressions",
+      "topics": [
+        "NFAs and regular expressions",
+        "Regular expressions"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Non-regular languages and the pumping lemma",
+      "topics": [
+        "Non-regular languages and the pumping lemma",
+        "Pumping lemma",
+        "Non-regular languages"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Turing machines",
+      "topics": [
+        "Turing machines"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Decidability",
+      "topics": [
+        "Decidability"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Undecidable problems and Post correspondence problem (PCP)",
+      "topics": [
+        "Undecidable problems and Post correspondence problem (PCP)",
+        "Undecidability",
+        "Post correspondence problem"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Mapping reducibility and Rice's theorem",
+      "topics": [
+        "Mapping reducibility and Rice's theorem",
+        "Reductions",
+        "Rice's theorem"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Self-reference and the recursion theorem",
+      "topics": [
+        "Self-reference and the recursion theorem",
+        "Recursion theorem"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Introduction to cryptography",
+      "topics": [
+        "Introduction to cryptography",
+        "Cryptography"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Complexity theory",
+      "topics": [
+        "Complexity theory",
+        "Complexity"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "Pseudorandom generators and one-way functions",
+      "topics": [
+        "Pseudorandom generators and one-way functions",
+        "One-way functions",
+        "PRGs"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "Public-key cryptography",
+      "topics": [
+        "Public-key cryptography"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "More complexity theory",
+      "topics": [
+        "More complexity theory",
+        "Complexity"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "More NP-completeness",
+      "topics": [
+        "More NP-completeness",
+        "NP-completeness"
+      ]
+    },
+    {
+      "lecture": 17,
+      "title": "Probabilistic Turing machines and complexity classes",
+      "topics": [
+        "Probabilistic Turing machines and complexity classes",
+        "BPP",
+        "Probabilistic Turing machines"
+      ]
+    },
+    {
+      "lecture": 18,
+      "title": "Trapdoor one-way functions and zero-knowledge proofs",
+      "topics": [
+        "Trapdoor one-way functions and zero-knowledge proofs",
+        "Zero-knowledge proofs"
+      ]
+    },
+    {
+      "lecture": 19,
+      "title": "Probably approximately correct (PAC) learning",
+      "topics": [
+        "Probably approximately correct (PAC) learning",
+        "PAC learning"
+      ]
+    },
+    {
+      "lecture": 20,
+      "title": "More PAC learning",
+      "topics": [
+        "More PAC learning",
+        "PAC learning"
+      ]
+    },
+    {
+      "lecture": 21,
+      "title": "Introduction to quantum",
+      "topics": [
+        "Introduction to quantum",
+        "Quantum computing"
+      ]
+    },
+    {
+      "lecture": 22,
+      "title": "Quantum mechanics and BQP",
+      "topics": [
+        "Quantum mechanics and BQP",
+        "BQP"
+      ]
+    },
+    {
+      "lecture": 23,
+      "title": "Quantum algorithms",
+      "topics": [
+        "Quantum algorithms"
+      ]
+    }
+  ],
+  "exams": [
+    {
+      "name": "Midterm exam",
+      "topics": [
+        "Pumping lemma",
+        "Turing machines",
+        "Decidability"
+      ]
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

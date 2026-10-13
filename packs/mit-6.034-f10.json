@@ -1,0 +1,229 @@
+{
+  "id": "mit-6.034-f10",
+  "name": "Artificial Intelligence",
+  "institution": "MIT OpenCourseWare",
+  "term": "Fall 2010",
+  "license_note": "Materials CC BY-NC-SA on ocw.mit.edu; this pack contains links only, not course content.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://ocw.mit.edu/courses/6-034-artificial-intelligence-fall-2010/",
+      "max_depth": 2,
+      "max_pages": 80
+    },
+    {
+      "kind": "youtube",
+      "url": "https://www.youtube.com/playlist?list=PLUl4u3cNGP63gFHB6xb-kVBiQHYe_4hSi",
+      "title": "MIT 6.034 Artificial Intelligence, Fall 2010"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Introduction and scope",
+      "topics": [
+        "Introduction and scope",
+        "Introduction"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Reasoning: goal trees and problem solving",
+      "topics": [
+        "Reasoning: goal trees and problem solving",
+        "Goal trees"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Reasoning: goal trees and rule-based expert systems",
+      "topics": [
+        "Reasoning: goal trees and rule-based expert systems",
+        "Expert systems"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Search: depth-first, hill climbing, beam",
+      "topics": [
+        "Search: depth-first, hill climbing, beam",
+        "Search",
+        "Hill climbing"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Search: optimal, branch and bound, A*",
+      "topics": [
+        "Search: optimal, branch and bound, A*",
+        "A*",
+        "Branch and bound"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Search: games, minimax, and alpha-beta",
+      "topics": [
+        "Search: games, minimax, and alpha-beta",
+        "Minimax",
+        "Alpha-beta"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Constraints: interpreting line drawings",
+      "topics": [
+        "Constraints: interpreting line drawings",
+        "Constraints"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Constraints: search, domain reduction",
+      "topics": [
+        "Constraints: search, domain reduction",
+        "Domain reduction"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Constraints: visual object recognition",
+      "topics": [
+        "Constraints: visual object recognition",
+        "Object recognition"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Introduction to learning, nearest neighbors",
+      "topics": [
+        "Introduction to learning, nearest neighbors",
+        "Nearest neighbors"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Learning: identification trees, disorder",
+      "topics": [
+        "Learning: identification trees, disorder",
+        "Identification trees"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Learning: neural nets, back propagation",
+      "topics": [
+        "Learning: neural nets, back propagation",
+        "Neural networks",
+        "Backpropagation"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "Learning: genetic algorithms",
+      "topics": [
+        "Learning: genetic algorithms",
+        "Genetic algorithms"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "Learning: sparse spaces, phonology",
+      "topics": [
+        "Learning: sparse spaces, phonology",
+        "Sparse spaces"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "Learning: near misses, felicity conditions",
+      "topics": [
+        "Learning: near misses, felicity conditions",
+        "Near misses"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "Learning: support vector machines",
+      "topics": [
+        "Learning: support vector machines",
+        "Support vector machines"
+      ]
+    },
+    {
+      "lecture": 17,
+      "title": "Learning: boosting",
+      "topics": [
+        "Learning: boosting",
+        "Boosting"
+      ]
+    },
+    {
+      "lecture": 18,
+      "title": "Representations: classes, trajectories, transitions",
+      "topics": [
+        "Representations: classes, trajectories, transitions",
+        "Knowledge representation"
+      ]
+    },
+    {
+      "lecture": 19,
+      "title": "Architectures: GPS, SOAR, Subsumption, Society of Mind",
+      "topics": [
+        "Architectures: GPS, SOAR, Subsumption, Society of Mind",
+        "Cognitive architectures"
+      ]
+    },
+    {
+      "lecture": 20,
+      "title": "The AI business",
+      "topics": [
+        "The AI business",
+        "AI business"
+      ]
+    },
+    {
+      "lecture": 21,
+      "title": "Probabilistic inference I",
+      "topics": [
+        "Probabilistic inference I",
+        "Probabilistic inference"
+      ]
+    },
+    {
+      "lecture": 22,
+      "title": "Probabilistic inference II",
+      "topics": [
+        "Probabilistic inference II",
+        "Probabilistic inference"
+      ]
+    },
+    {
+      "lecture": 23,
+      "title": "Model merging, cross-modal coupling, course summary",
+      "topics": [
+        "Model merging, cross-modal coupling, course summary",
+        "Model merging"
+      ]
+    }
+  ],
+  "exams": [
+    {
+      "name": "Quiz 1"
+    },
+    {
+      "name": "Quiz 2"
+    },
+    {
+      "name": "Quiz 3"
+    },
+    {
+      "name": "Quiz 4"
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

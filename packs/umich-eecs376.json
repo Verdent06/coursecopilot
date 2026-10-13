@@ -1,0 +1,326 @@
+{
+  "id": "umich-eecs376",
+  "name": "Foundations of Computer Science",
+  "institution": "University of Michigan",
+  "term": "Fall 2026",
+  "license_note": "Public pages and notes on eecs376.org and eecs376.github.io/notes. This pack contains links only. Lecture capture and Canvas are not included.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://eecs376.org/",
+      "max_depth": 2,
+      "max_pages": 40,
+      "include_prefix": "https://eecs376.org/"
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.org/syllabus.html",
+      "max_depth": 0,
+      "max_pages": 1
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/",
+      "max_depth": 1,
+      "max_pages": 20,
+      "include_prefix": "https://eecs376.github.io/notes/"
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/algorithms.html",
+      "max_depth": 0,
+      "max_pages": 1,
+      "lecture": 1
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/computability.html",
+      "max_depth": 0,
+      "max_pages": 1,
+      "lecture": 8
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/complexity.html",
+      "max_depth": 0,
+      "max_pages": 1,
+      "lecture": 15
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/randomness.html",
+      "max_depth": 0,
+      "max_pages": 1,
+      "lecture": 21
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/cryptography.html",
+      "max_depth": 0,
+      "max_pages": 1,
+      "lecture": 24
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Introduction, the Potential Method",
+      "topics": [
+        "Introduction, the Potential Method",
+        "Potential method"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Potential Method, Divide and Conquer",
+      "topics": [
+        "Potential Method, Divide and Conquer",
+        "Divide and conquer"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Divide and Conquer",
+      "topics": [
+        "Divide and Conquer",
+        "Master theorem"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Dynamic Programming 1",
+      "topics": [
+        "Dynamic Programming 1",
+        "Dynamic programming"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Dynamic Programming 2",
+      "topics": [
+        "Dynamic Programming 2",
+        "Dynamic programming"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Dynamic Programming 3 (graph algorithms)",
+      "topics": [
+        "Dynamic Programming 3 (graph algorithms)",
+        "Graph DP"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Greedy Algorithms",
+      "topics": [
+        "Greedy Algorithms",
+        "Greedy algorithms"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Formal Languages and Finite Automata",
+      "topics": [
+        "Formal Languages and Finite Automata",
+        "Finite automata",
+        "Regular languages"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Turing Machines and Decidability",
+      "topics": [
+        "Turing Machines and Decidability",
+        "Turing machines",
+        "Decidability"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Diagonalization",
+      "topics": [
+        "Diagonalization"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "\"Natural\" Undecidable Problems",
+      "topics": [
+        "\"Natural\" Undecidable Problems",
+        "Halting problem",
+        "Undecidability"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Turing Reductions and More Undecidable Problems",
+      "topics": [
+        "Turing Reductions and More Undecidable Problems",
+        "Turing reductions"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "Recognizability",
+      "topics": [
+        "Recognizability",
+        "RE"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "Midterm review",
+      "topics": [
+        "Midterm review"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "The Classes P and NP, Satisfiability",
+      "topics": [
+        "The Classes P and NP, Satisfiability",
+        "P",
+        "NP",
+        "SAT"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "NP-Completeness and P vs NP",
+      "topics": [
+        "NP-Completeness and P vs NP",
+        "NP-completeness"
+      ]
+    },
+    {
+      "lecture": 17,
+      "title": "More NP-Complete Problems",
+      "topics": [
+        "More NP-Complete Problems",
+        "NP-complete problems"
+      ]
+    },
+    {
+      "lecture": 18,
+      "title": "The Cook-Levin Theorem",
+      "topics": [
+        "The Cook-Levin Theorem",
+        "Cook-Levin theorem"
+      ]
+    },
+    {
+      "lecture": 19,
+      "title": "Search and Approximation Algorithms 1",
+      "topics": [
+        "Search and Approximation Algorithms 1",
+        "Approximation algorithms"
+      ]
+    },
+    {
+      "lecture": 20,
+      "title": "Approximation Algorithms 2",
+      "topics": [
+        "Approximation Algorithms 2",
+        "Approximation algorithms"
+      ]
+    },
+    {
+      "lecture": 21,
+      "title": "Probability, Randomness in Computation 1",
+      "topics": [
+        "Probability, Randomness in Computation 1",
+        "Randomized algorithms"
+      ]
+    },
+    {
+      "lecture": 22,
+      "title": "Randomness in Computation 2",
+      "topics": [
+        "Randomness in Computation 2",
+        "Randomized algorithms"
+      ]
+    },
+    {
+      "lecture": 23,
+      "title": "Randomness in Computation 3",
+      "topics": [
+        "Randomness in Computation 3",
+        "Randomized algorithms"
+      ]
+    },
+    {
+      "lecture": 24,
+      "title": "One-time Pad, Discrete Logarithm, and Diffie-Hellman",
+      "topics": [
+        "One-time Pad, Discrete Logarithm, and Diffie-Hellman",
+        "One-time pad",
+        "Diffie-Hellman"
+      ]
+    },
+    {
+      "lecture": 25,
+      "title": "Factoring and RSA",
+      "topics": [
+        "Factoring and RSA",
+        "RSA",
+        "Factoring"
+      ]
+    },
+    {
+      "lecture": 26,
+      "title": "Zero Knowledge",
+      "topics": [
+        "Zero Knowledge",
+        "Zero-knowledge proofs"
+      ]
+    }
+  ],
+  "exams": [
+    {
+      "name": "Midterm",
+      "topics": [
+        "Potential method",
+        "Divide and conquer",
+        "Dynamic programming",
+        "Greedy algorithms",
+        "Finite automata",
+        "Turing machines",
+        "Decidability",
+        "Diagonalization",
+        "Turing reductions",
+        "Recognizability"
+      ]
+    },
+    {
+      "name": "Final",
+      "topics": [
+        "P",
+        "NP",
+        "NP-completeness",
+        "Cook-Levin theorem",
+        "Approximation algorithms",
+        "Randomized algorithms",
+        "RSA",
+        "Zero-knowledge proofs"
+      ]
+    }
+  ],
+  "connect_yourself": [
+    {
+      "kind": "lecture_capture",
+      "host": "leccap.engin.umich.edu",
+      "message": "UMich CAEN Lecture Capture is login-gated and is not in this pack. Run `coursecopilot login leccap`, then add_source kind=leccap with your Canvas Lecture Recordings site URL (leccap.engin.umich.edu)."
+    },
+    {
+      "kind": "canvas",
+      "host": "umich.instructure.com",
+      "message": "Canvas files, modules, pages, and announcements are not in this pack. Connect Canvas with your own token (`coursecopilot canvas connect` once M6 ships) and add the EECS 376 course yourself."
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}

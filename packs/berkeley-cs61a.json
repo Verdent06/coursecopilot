@@ -1,0 +1,333 @@
+{
+  "id": "berkeley-cs61a",
+  "name": "Structure and Interpretation of Computer Programs",
+  "institution": "UC Berkeley",
+  "term": "Fall 2026",
+  "license_note": "Public course site cs61a.org; this pack contains links only.",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://cs61a.org/fa26/",
+      "max_depth": 2,
+      "max_pages": 80,
+      "include_prefix": "https://cs61a.org/"
+    }
+  ],
+  "topics": [
+    {
+      "lecture": 1,
+      "title": "Welcome",
+      "topics": [
+        "Welcome"
+      ]
+    },
+    {
+      "lecture": 2,
+      "title": "Functions",
+      "topics": [
+        "Functions"
+      ]
+    },
+    {
+      "lecture": 3,
+      "title": "Control",
+      "topics": [
+        "Control"
+      ]
+    },
+    {
+      "lecture": 4,
+      "title": "Higher-Order Functions",
+      "topics": [
+        "Higher-Order Functions",
+        "Higher-order functions"
+      ]
+    },
+    {
+      "lecture": 5,
+      "title": "Environments",
+      "topics": [
+        "Environments"
+      ]
+    },
+    {
+      "lecture": 6,
+      "title": "Abstraction",
+      "topics": [
+        "Abstraction"
+      ]
+    },
+    {
+      "lecture": 7,
+      "title": "Function Examples",
+      "topics": [
+        "Function Examples",
+        "Function examples"
+      ]
+    },
+    {
+      "lecture": 8,
+      "title": "Midterm 1 Review",
+      "topics": [
+        "Midterm 1 Review",
+        "Midterm 1 review"
+      ]
+    },
+    {
+      "lecture": 9,
+      "title": "Recursion",
+      "topics": [
+        "Recursion"
+      ]
+    },
+    {
+      "lecture": 10,
+      "title": "Tree Recursion",
+      "topics": [
+        "Tree Recursion",
+        "Tree recursion"
+      ]
+    },
+    {
+      "lecture": 11,
+      "title": "Sequences",
+      "topics": [
+        "Sequences"
+      ]
+    },
+    {
+      "lecture": 12,
+      "title": "Containers",
+      "topics": [
+        "Containers"
+      ]
+    },
+    {
+      "lecture": 13,
+      "title": "Objects",
+      "topics": [
+        "Objects"
+      ]
+    },
+    {
+      "lecture": 14,
+      "title": "Linked Lists",
+      "topics": [
+        "Linked Lists",
+        "Linked lists"
+      ]
+    },
+    {
+      "lecture": 15,
+      "title": "Trees",
+      "topics": [
+        "Trees"
+      ]
+    },
+    {
+      "lecture": 16,
+      "title": "Midterm 2 Review",
+      "topics": [
+        "Midterm 2 Review",
+        "Midterm 2 review"
+      ]
+    },
+    {
+      "lecture": 17,
+      "title": "Problem Solving",
+      "topics": [
+        "Problem Solving",
+        "Problem solving"
+      ]
+    },
+    {
+      "lecture": 18,
+      "title": "Mutation",
+      "topics": [
+        "Mutation"
+      ]
+    },
+    {
+      "lecture": 19,
+      "title": "Classes",
+      "topics": [
+        "Classes"
+      ]
+    },
+    {
+      "lecture": 20,
+      "title": "Attributes",
+      "topics": [
+        "Attributes"
+      ]
+    },
+    {
+      "lecture": 21,
+      "title": "Inheritance",
+      "topics": [
+        "Inheritance"
+      ]
+    },
+    {
+      "lecture": 22,
+      "title": "Lazy Evaluation",
+      "topics": [
+        "Lazy Evaluation",
+        "Lazy evaluation"
+      ]
+    },
+    {
+      "lecture": 23,
+      "title": "Generators",
+      "topics": [
+        "Generators"
+      ]
+    },
+    {
+      "lecture": 24,
+      "title": "Efficiency",
+      "topics": [
+        "Efficiency"
+      ]
+    },
+    {
+      "lecture": 25,
+      "title": "Object Examples",
+      "topics": [
+        "Object Examples",
+        "Object examples"
+      ]
+    },
+    {
+      "lecture": 26,
+      "title": "Midterm 3 Review",
+      "topics": [
+        "Midterm 3 Review",
+        "Midterm 3 review"
+      ]
+    },
+    {
+      "lecture": 27,
+      "title": "Functional Programming",
+      "topics": [
+        "Functional Programming",
+        "Functional programming"
+      ]
+    },
+    {
+      "lecture": 28,
+      "title": "Algebraic Data Types",
+      "topics": [
+        "Algebraic Data Types",
+        "Algebraic data types"
+      ]
+    },
+    {
+      "lecture": 29,
+      "title": "Immutable Data",
+      "topics": [
+        "Immutable Data",
+        "Immutable data"
+      ]
+    },
+    {
+      "lecture": 30,
+      "title": "Interpreters",
+      "topics": [
+        "Interpreters"
+      ]
+    },
+    {
+      "lecture": 31,
+      "title": "Coding Agents",
+      "topics": [
+        "Coding Agents",
+        "Coding agents"
+      ]
+    },
+    {
+      "lecture": 32,
+      "title": "Browsers",
+      "topics": [
+        "Browsers"
+      ]
+    },
+    {
+      "lecture": 33,
+      "title": "Applications",
+      "topics": [
+        "Applications"
+      ]
+    },
+    {
+      "lecture": 34,
+      "title": "Tables",
+      "topics": [
+        "Tables"
+      ]
+    },
+    {
+      "lecture": 35,
+      "title": "SQL",
+      "topics": [
+        "SQL"
+      ]
+    },
+    {
+      "lecture": 36,
+      "title": "Aggregation",
+      "topics": [
+        "Aggregation"
+      ]
+    },
+    {
+      "lecture": 37,
+      "title": "Software Testing",
+      "topics": [
+        "Software Testing",
+        "Software testing"
+      ]
+    },
+    {
+      "lecture": 38,
+      "title": "Software Tracing",
+      "topics": [
+        "Software Tracing",
+        "Software tracing"
+      ]
+    },
+    {
+      "lecture": 39,
+      "title": "Ethics",
+      "topics": [
+        "Ethics"
+      ]
+    },
+    {
+      "lecture": 40,
+      "title": "Conclusion",
+      "topics": [
+        "Conclusion"
+      ]
+    }
+  ],
+  "exams": [
+    {
+      "name": "Midterm 1"
+    },
+    {
+      "name": "Midterm 2"
+    },
+    {
+      "name": "Midterm 3"
+    },
+    {
+      "name": "Final"
+    }
+  ],
+  "schema": 1,
+  "maintainers": [
+    "verdent06"
+  ],
+  "version": "1.0.0"
+}
