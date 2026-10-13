@@ -14,10 +14,51 @@
     },
     {
       "kind": "website",
+      "url": "https://eecs376.org/syllabus.html",
+      "max_depth": 0,
+      "max_pages": 1
+    },
+    {
+      "kind": "website",
       "url": "https://eecs376.github.io/notes/",
-      "max_depth": 2,
-      "max_pages": 80,
+      "max_depth": 1,
+      "max_pages": 20,
       "include_prefix": "https://eecs376.github.io/notes/"
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/algorithms.html",
+      "max_depth": 0,
+      "max_pages": 1,
+      "lecture": 1
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/computability.html",
+      "max_depth": 0,
+      "max_pages": 1,
+      "lecture": 8
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/complexity.html",
+      "max_depth": 0,
+      "max_pages": 1,
+      "lecture": 15
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/randomness.html",
+      "max_depth": 0,
+      "max_pages": 1,
+      "lecture": 21
+    },
+    {
+      "kind": "website",
+      "url": "https://eecs376.github.io/notes/cryptography.html",
+      "max_depth": 0,
+      "max_pages": 1,
+      "lecture": 24
     }
   ],
   "topics": [

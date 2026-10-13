@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-13T22:51:45.830Z",
+  "generated_at": "2026-10-13T23:06:03.245Z",
   "packs": [
     {
       "id": "3b1b-linear-algebra",
@@ -37,7 +37,7 @@
       "term": "2022",
       "institution": "Harvard University",
       "version": "1.0.0",
-      "source_count": 2,
+      "source_count": 12,
       "verified": true,
       "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/harvard-cs50p.json"
     },
@@ -47,7 +47,7 @@
       "term": "2026",
       "institution": "Harvard University",
       "version": "1.0.0",
-      "source_count": 2,
+      "source_count": 13,
       "verified": true,
       "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/harvard-cs50x.json"
     },
@@ -147,7 +147,7 @@
       "term": "Fall 2026",
       "institution": "University of Michigan",
       "version": "1.0.0",
-      "source_count": 2,
+      "source_count": 8,
       "verified": true,
       "url": "https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/umich-eecs376.json"
     }

@@ -13,6 +13,86 @@
       "include_prefix": "https://cs50.harvard.edu/python/"
     },
     {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/python/notes/0/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 0,
+      "title": "CS50P notes week 0"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/python/notes/1/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 1,
+      "title": "CS50P notes week 1"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/python/notes/2/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 2,
+      "title": "CS50P notes week 2"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/python/notes/3/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 3,
+      "title": "CS50P notes week 3"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/python/notes/4/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 4,
+      "title": "CS50P notes week 4"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/python/notes/5/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 5,
+      "title": "CS50P notes week 5"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/python/notes/6/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 6,
+      "title": "CS50P notes week 6"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/python/notes/7/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 7,
+      "title": "CS50P notes week 7"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/python/notes/8/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 8,
+      "title": "CS50P notes week 8"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/python/notes/9/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 9,
+      "title": "CS50P notes week 9"
+    },
+    {
       "kind": "youtube",
       "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T3817j24-GogXmWqO5Q5vYy0V",
       "title": "CS50P 2022 Lectures"

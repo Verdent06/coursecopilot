@@ -13,6 +13,94 @@
       "include_prefix": "https://cs50.harvard.edu/x/"
     },
     {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/0/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 0,
+      "title": "CS50x notes week 0"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/1/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 1,
+      "title": "CS50x notes week 1"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/2/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 2,
+      "title": "CS50x notes week 2"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/3/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 3,
+      "title": "CS50x notes week 3"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/4/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 4,
+      "title": "CS50x notes week 4"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/5/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 5,
+      "title": "CS50x notes week 5"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/6/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 6,
+      "title": "CS50x notes week 6"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/7/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 7,
+      "title": "CS50x notes week 7"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/8/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 8,
+      "title": "CS50x notes week 8"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/9/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 9,
+      "title": "CS50x notes week 9"
+    },
+    {
+      "kind": "website",
+      "url": "https://cs50.harvard.edu/x/notes/10/",
+      "max_depth": 1,
+      "max_pages": 12,
+      "lecture": 10,
+      "title": "CS50x notes week 10"
+    },
+    {
       "kind": "youtube",
       "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T380hlTqAU8HfvVepCcjCqTg6",
       "title": "CS50x 2026 Lectures"
