@@ -80,6 +80,7 @@ describe("MCP stdio e2e", () => {
     expect(names).toEqual([
       "add_course",
       "add_source",
+      "fetch",
       "generate_quiz_context",
       "get_chunk",
       "get_course_outline",
@@ -92,6 +93,7 @@ describe("MCP stdio e2e", () => {
       "ping",
       "record_quiz_attempt",
       "remove_source",
+      "search",
       "search_course",
       "set_exam",
       "set_topics",

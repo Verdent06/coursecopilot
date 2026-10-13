@@ -1,0 +1,3 @@
+# Render Blueprints must live at the repository root.
+# Canonical file: /render.yaml
+# Deploy: https://render.com/deploy?repo=https://github.com/Verdent06/coursecopilot

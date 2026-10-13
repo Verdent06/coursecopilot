@@ -6,6 +6,7 @@ import type { IngestQueue } from "../../ingest/queue.js";
 import { parseYoutubeUrl } from "../../ingest/youtube/parse.js";
 import { assertExists, resolveLocalPath } from "../../util/files.js";
 import { newId } from "../../util/ids.js";
+import { assertPublicUrl } from "../../util/ssrf.js";
 import { fail, ok } from "../tool-result.js";
 
 const KIND_MILESTONE: Record<string, string> = {
@@ -47,7 +48,13 @@ export const addSourceOutputSchema = z.object({
   status: z.literal("queued"),
 });
 
-export function registerAddSource(server: McpServer, repo: CourseRepo, queue: IngestQueue): void {
+export function registerAddSource(
+  server: McpServer,
+  repo: CourseRepo,
+  queue: IngestQueue,
+  options: { allowLocalPaths?: boolean } = {},
+): void {
+  const allowLocalPaths = options.allowLocalPaths ?? true;
   server.registerTool(
     "add_source",
     {
@@ -65,11 +72,19 @@ export function registerAddSource(server: McpServer, repo: CourseRepo, queue: In
     },
     async ({ course_id, kind, uri, options }) => {
       try {
+        if (/^https?:\/\//i.test(uri)) {
+          assertPublicUrl(uri);
+        }
         const pending = KIND_MILESTONE[kind];
         if (pending) {
           return fail(pending);
         }
         if (kind === "file" || kind === "folder") {
+          if (!allowLocalPaths) {
+            return fail(
+              "Local file paths are disabled unless --allow-path is set (remote mode). Use a website, pack, or Canvas source instead.",
+            );
+          }
           const abs = resolveLocalPath(uri);
           assertExists(abs);
           const st = statSync(abs);
@@ -90,6 +105,11 @@ export function registerAddSource(server: McpServer, repo: CourseRepo, queue: In
         }
         if (kind === "transcript") {
           if (!/^https?:\/\//i.test(uri)) {
+            if (!allowLocalPaths) {
+              return fail(
+                "Local file paths are disabled unless --allow-path is set (remote mode). Use an http(s) transcript URL, website, pack, or Canvas source instead.",
+              );
+            }
             const abs = resolveLocalPath(uri);
             assertExists(abs);
             const st = statSync(abs);
