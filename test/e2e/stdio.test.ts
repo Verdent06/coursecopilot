@@ -84,6 +84,13 @@ describe("MCP stdio e2e", () => {
       "add_course",
       "add_pack",
       "add_source",
+      "canvas_get_page",
+      "canvas_list_announcements",
+      "canvas_list_assignments",
+      "canvas_list_courses",
+      "canvas_list_files",
+      "canvas_list_modules",
+      "canvas_list_pages",
       "export_pack",
       "fetch",
       "generate_quiz_context",
@@ -113,6 +120,7 @@ describe("MCP stdio e2e", () => {
       "quiz_me",
       "quiz_me_on_misses",
       "study_session",
+      "whats_due",
     ]);
     // Keep this log: captured for the PR description as protocol proof.
     console.log("tools/list", JSON.stringify(listed, null, 2));
@@ -214,6 +222,21 @@ describe("MCP stdio e2e", () => {
     expect(sources.structuredContent).toMatchObject({
       sources: [{ kind: "folder", status: "done", doc_count: 4 }],
     });
+
+    const missingCanvas = await client.callTool({
+      name: "add_source",
+      arguments: {
+        course_id: "eecs376-f26",
+        kind: "canvas",
+        uri: "canvas://course/1",
+      },
+    });
+    expect(missingCanvas.isError).toBe(true);
+    const missingText =
+      missingCanvas.content[0] && "text" in missingCanvas.content[0]
+        ? missingCanvas.content[0].text
+        : "";
+    expect(missingText).toMatch(/canvas connect|not configured/i);
 
     const youtube = await client.callTool({
       name: "add_source",

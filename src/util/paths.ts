@@ -8,8 +8,15 @@ export function getHomeDir(): string {
   return process.env.COURSECOPILOT_HOME ?? join(homedir(), ".coursecopilot");
 }
 
+export const SECRETS_FILENAME = "secrets.json";
+
 export function getDbPath(): string {
   return join(getHomeDir(), DB_FILENAME);
+}
+
+/** Local secrets file (Canvas token). Mode 0600. Never the DB. */
+export function getSecretsPath(): string {
+  return join(getHomeDir(), SECRETS_FILENAME);
 }
 
 /**

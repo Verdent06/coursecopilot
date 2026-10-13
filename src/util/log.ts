@@ -7,7 +7,10 @@ function redact(value: unknown): unknown {
     return value
       .replaceAll(/Authorization:\s*\S+/gi, "Authorization: [redacted]")
       .replaceAll(/Cookie:\s*[^\n]+/gi, "Cookie: [redacted]")
-      .replaceAll(/Set-Cookie:\s*[^\n]+/gi, "Set-Cookie: [redacted]");
+      .replaceAll(/Set-Cookie:\s*[^\n]+/gi, "Set-Cookie: [redacted]")
+      .replaceAll(/Bearer\s+\S+/gi, "Bearer [redacted]")
+      .replaceAll(/("token"\s*:\s*")[^"]*/gi, "$1[redacted]")
+      .replaceAll(/CANVAS_TOKEN=\S+/gi, "CANVAS_TOKEN=[redacted]");
   }
   return value;
 }

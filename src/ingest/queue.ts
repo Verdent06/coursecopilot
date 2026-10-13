@@ -1,3 +1,4 @@
+import type { CanvasClient } from "../canvas/client.js";
 import { type CourseRepo, RepoError } from "../db/repo.js";
 import { EMBED_BATCH } from "../retrieve/config.js";
 import { newId } from "../util/ids.js";
@@ -6,6 +7,7 @@ import { nowIso } from "../util/time.js";
 import type { FetchLike } from "./crawl/fetch.js";
 import type { Embedder } from "./embed.js";
 import type { LeccapClient } from "./providers/leccap/client.js";
+import { ingestCanvasSource } from "./sources/canvas.js";
 import { ingestFileSource } from "./sources/file.js";
 import { ingestLeccapSource } from "./sources/leccap.js";
 import { ingestTranscriptSource } from "./sources/transcript.js";
@@ -24,12 +26,10 @@ export type IngestQueueOptions = {
   crawlDelayMs?: number;
   fetchFn?: FetchLike;
   leccap?: LeccapClient;
+  canvas?: CanvasClient;
+  canvasFetch?: FetchLike;
   /** After heuristic topics (e.g. apply a pack lecture → topic map). */
   onSourceDone?: (sourceId: string, courseId: string) => Promise<void> | void;
-};
-
-const UNIMPLEMENTED: Record<string, string> = {
-  canvas: "Canvas ingestion is not implemented yet (milestone M6)",
 };
 
 /**
@@ -58,17 +58,14 @@ export class IngestQueue {
     if (!source) {
       throw new RepoError(`Unknown source_id "${sourceId}"`);
     }
-    const unimplemented = UNIMPLEMENTED[source.kind];
-    if (unimplemented) {
-      throw new RepoError(unimplemented);
-    }
     if (
       source.kind !== "file" &&
       source.kind !== "folder" &&
       source.kind !== "website" &&
       source.kind !== "youtube" &&
       source.kind !== "transcript" &&
-      source.kind !== "leccap"
+      source.kind !== "leccap" &&
+      source.kind !== "canvas"
     ) {
       throw new RepoError(`Unsupported source kind "${source.kind}"`);
     }
@@ -217,6 +214,17 @@ export class IngestQueue {
     if (source.kind === "leccap") {
       return ingestLeccapSource(
         { repo: this.opts.repo, client: this.opts.leccap, skipSession: Boolean(this.opts.leccap) },
+        sourceId,
+        persistProgress,
+      );
+    }
+    if (source.kind === "canvas") {
+      return ingestCanvasSource(
+        {
+          repo: this.opts.repo,
+          canvas: this.opts.canvas,
+          fetchFn: this.opts.canvasFetch ?? this.fetchFn,
+        },
         sourceId,
         persistProgress,
       );

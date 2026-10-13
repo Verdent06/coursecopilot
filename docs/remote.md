@@ -12,7 +12,7 @@ cloud, so they need a public Streamable HTTP URL:
 
 There is **no central hosted CourseCopilot**. You run `coursecopilot serve --http`
 on your laptop (plus `coursecopilot tunnel`) or on a one-click deploy you own.
-Canvas tokens, if you set them later, stay on that instance.
+Canvas tokens stay on that instance (`CANVAS_TOKEN` / `canvas connect` on the host; never accept someone else’s token).
 
 Transport: [MCP Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports) (2026-07-28, POST to one endpoint). An SSE alias is not served; Gemini Enterprise rejects SSE anyway.
 

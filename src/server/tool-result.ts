@@ -23,3 +23,19 @@ export function fail(message: string): {
     isError: true,
   };
 }
+
+/** Error with structuredContent (Canvas graceful errors: `{error, fallback}`). */
+export function failData<T extends Record<string, unknown>>(
+  data: T,
+  text?: string,
+): {
+  content: [{ type: "text"; text: string }];
+  structuredContent: T;
+  isError: true;
+} {
+  return {
+    content: [{ type: "text", text: text ?? JSON.stringify(data, null, 2) }],
+    structuredContent: data,
+    isError: true,
+  };
+}

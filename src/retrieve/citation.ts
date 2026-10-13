@@ -176,10 +176,11 @@ function buildLabel(
   kind: CitationKind,
   loc: Locator,
 ): string {
-  if (kind === "canvas") {
-    const module = typeof loc.title === "string" ? loc.title : title;
-    const item = title;
-    const inner = ["Canvas", module, item].filter(Boolean).join(" · ");
+  if (kind === "canvas" || loc.canvas) {
+    const module = loc.canvas?.module;
+    const item = loc.title || title;
+    const extra = where && item !== where ? where : null;
+    const inner = ["Canvas", module, item, extra].filter(Boolean).join(" · ");
     return `[${inner}]`;
   }
   if (kind === "lecture") {

@@ -246,7 +246,7 @@ function buildRationale(input: {
       ? `${input.examName} on ${input.examDate}`
       : input.examDate
         ? `exam on ${input.examDate}`
-        : "no exam set (planning 7 days; call set_exam to target a date — Canvas due dates can seed this later)";
+        : "no exam set (planning 7 days; call set_exam to target a date — Canvas assignments named Midterm/Exam/Final are suggested after ingest, never auto-set)";
   const ranking = input.chosen
     .map(
       (t, i) => `${t.name} (${input.topicMinutes[i] ?? 0} min, weakness ${t.weakness.toFixed(3)})`,

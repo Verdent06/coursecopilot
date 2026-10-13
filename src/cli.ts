@@ -2,6 +2,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { Command } from "commander";
+import { connectCanvas } from "./canvas/connect.js";
 import { runLoginCommand } from "./cli/login.js";
 import { RepoError } from "./db/repo.js";
 import { stringifyManifest } from "./packs/install.js";
@@ -22,7 +23,11 @@ program
   .description(
     "CourseCopilot MCP server — your classes, inside the AI you already use. No API key.",
   )
-  .version(VERSION)
+  .version(VERSION);
+
+program
+  .command("stdio", { isDefault: true, hidden: true })
+  .description("Run the MCP server over stdio (default when no command is given).")
   .action(() => {
     startStdio();
   });
@@ -146,6 +151,34 @@ program
   )
   .action(async (provider: string, opts: { cookies?: string }) => {
     await runLoginCommand(provider, opts);
+  });
+
+const canvas = program.command("canvas").description("Canvas LMS (read-only, your own token)");
+
+canvas
+  .command("connect")
+  .description(
+    "Validate a personal access token and store it in ~/.coursecopilot/secrets.json (0600). Never written to the DB, packs, or client configs.",
+  )
+  .option("--base-url <url>", "Canvas instance URL, e.g. https://umich.instructure.com")
+  .option("--token <token>", "Personal access token (Account → Settings → Approved Integrations)")
+  .option("-y, --yes", "Non-interactive (requires --base-url and --token)")
+  .action(async (opts: { baseUrl?: string; token?: string; yes?: boolean }) => {
+    const result = await connectCanvas({
+      baseUrl: opts.baseUrl,
+      token: opts.token,
+      yes: Boolean(opts.yes),
+    });
+    if (!result.ok) {
+      process.stderr.write(`${result.message}\n`);
+      process.exit(1);
+    }
+    process.stderr.write(
+      `✓ Connected as ${result.name} (${result.baseUrl})\n` +
+        `Token stored in ${result.secretsPath} (mode 0600). ` +
+        "It is never written to the database, packs, logs, or client configs.\n",
+    );
+    process.exit(0);
   });
 
 program
