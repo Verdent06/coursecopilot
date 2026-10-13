@@ -3,21 +3,35 @@ import { type OpenedDatabase, openDatabase } from "../db/migrate.js";
 import { CourseRepo } from "../db/repo.js";
 import { createDefaultEmbedder, type Embedder } from "../ingest/embed.js";
 import { IngestQueue } from "../ingest/queue.js";
+import { LearnService } from "../learn/service.js";
 import { HybridSearch } from "../retrieve/hybrid.js";
 import { SERVER_NAME, VERSION } from "../version.js";
+import { registerExamPrep } from "./prompts/exam_prep.js";
+import { registerExplainWithSources } from "./prompts/explain_with_sources.js";
+import { registerQuizMe } from "./prompts/quiz_me.js";
+import { registerQuizMeOnMisses } from "./prompts/quiz_me_on_misses.js";
+import { registerStudySession } from "./prompts/study_session.js";
 import { registerCoursesResource } from "./resources/courses.js";
 import { registerDocumentResource } from "./resources/document.js";
+import { registerMasteryResource } from "./resources/mastery.js";
+import { registerOutlineResource } from "./resources/outline.js";
 import { registerAddCourse } from "./tools/add_course.js";
 import { registerAddSource } from "./tools/add_source.js";
+import { registerGenerateQuizContext } from "./tools/generate_quiz_context.js";
 import { registerGetChunk } from "./tools/get_chunk.js";
+import { registerGetCourseOutline } from "./tools/get_course_outline.js";
 import { registerGetDocument } from "./tools/get_document.js";
 import { registerGetIngestStatus } from "./tools/get_ingest_status.js";
+import { registerGetStudyPlan } from "./tools/get_study_plan.js";
+import { registerGetWeakSpots } from "./tools/get_weak_spots.js";
 import { registerListCourses } from "./tools/list_courses.js";
 import { registerListSources } from "./tools/list_sources.js";
 import { registerPing } from "./tools/ping.js";
+import { registerRecordQuizAttempt } from "./tools/record_quiz_attempt.js";
 import { registerRemoveSource } from "./tools/remove_source.js";
 import { registerSearchCourse } from "./tools/search_course.js";
 import { registerSetExam } from "./tools/set_exam.js";
+import { registerSetTopics } from "./tools/set_topics.js";
 
 export type CreateServerOptions = {
   dbPath?: string;
@@ -26,6 +40,8 @@ export type CreateServerOptions = {
   allowLocalPaths?: boolean;
   /** Injected embedder (tests). Default is local Transformers.js MiniLM. */
   embedder?: Embedder | null;
+  /** Injected clock (tests). */
+  now?: () => Date;
 };
 
 export function createServer(options: CreateServerOptions = {}): McpServer {
@@ -38,6 +54,7 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
     embedder,
   });
   const search = new HybridSearch(repo, embedder, opened.vecEnabled);
+  const learn = new LearnService(repo, search, embedder, options.now);
 
   const server = new McpServer({
     name: SERVER_NAME,
@@ -57,8 +74,21 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
   registerSearchCourse(server, search);
   registerGetChunk(server, search);
   registerGetDocument(server, search);
+  registerGetCourseOutline(server, learn);
+  registerSetTopics(server, learn);
+  registerGenerateQuizContext(server, learn);
+  registerRecordQuizAttempt(server, learn);
+  registerGetWeakSpots(server, learn);
+  registerGetStudyPlan(server, learn);
+  registerQuizMeOnMisses(server, learn);
+  registerQuizMe(server);
+  registerStudySession(server);
+  registerExamPrep(server);
+  registerExplainWithSources(server);
   registerCoursesResource(server, repo);
   registerDocumentResource(server, repo, search);
+  registerOutlineResource(server, repo, learn);
+  registerMasteryResource(server, repo, learn);
 
   return server;
 }

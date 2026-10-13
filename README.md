@@ -4,7 +4,7 @@ Your classes, inside the AI you already use. Open-source MCP connector that turn
 
 No API key. The host AI does all generation; this server fetches, indexes, retrieves, and stores learning state.
 
-**Status:** milestones M0 (scaffold), M1 (database + courses), and M2 (files pipeline) are implemented. Search, website crawl, and quiz/study tools land in later milestones — see [docs/SPEC.md](docs/SPEC.md).
+**Status:** milestones M0–M3 (scaffold, database, files pipeline, hybrid search) plus **M8 (learning layer)** are implemented. Website crawl, YouTube, Canvas, packs, and remote HTTP land in other milestones — see [docs/SPEC.md](docs/SPEC.md).
 
 ## Requirements
 
@@ -33,7 +33,7 @@ npx @modelcontextprotocol/inspector node dist/cli.js
 
 Data lives in `~/.coursecopilot/cc.db` (override with `COURSECOPILOT_HOME`).
 
-## Tools (M0–M2)
+## Tools (M0–M3, M8)
 
 | Tool | Role |
 |---|---|
@@ -45,8 +45,18 @@ Data lives in `~/.coursecopilot/cc.db` (override with `COURSECOPILOT_HOME`).
 | `get_ingest_status` | Poll an ingest job (`docs`, `chunks`, `skipped`) |
 | `list_sources` | List sources on a course |
 | `remove_source` | Delete a source and its chunks |
+| `search_course` | Hybrid keyword + vector search with citations |
+| `get_chunk` / `get_document` | Fetch a cited chunk (plus neighbors) or a full document |
+| `get_course_outline` | Documents, lectures, topics |
+| `set_topics` | Host-labeled topics bound to chunks/keywords |
+| `generate_quiz_context` | Grounded chunks + instructions so the **host AI** writes questions (no server LLM) |
+| `record_quiz_attempt` | Store graded items and update Beta topic mastery (with forgetting) |
+| `get_weak_spots` | Weakest topics plus suggested citations |
+| `get_study_plan` | Deterministic review → quiz plan, mixed exam_sim on the last day |
 
-Resource: `coursecopilot://courses`
+Resources: `coursecopilot://courses`, `coursecopilot://document/{id}`, `coursecopilot://course/{id}/outline`, `coursecopilot://course/{id}/mastery`
+
+Prompt: `quiz_me_on_misses` (plus `quiz_me`, `study_session`, `exam_prep`, `explain_with_sources`).
 
 ## Develop
 

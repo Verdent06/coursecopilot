@@ -1,8 +1,7 @@
 import { type CourseRepo, RepoError, type SourceKind } from "../db/repo.js";
 import type { Embedder } from "../ingest/embed.js";
-import type { Locator } from "../ingest/types.js";
 import { log } from "../util/log.js";
-import { buildCitation, type Citation, parseLocator, parseMeta } from "./citation.js";
+import { type Citation, citationFromChunkRow } from "./citation.js";
 import { DEFAULT_K, FTS_CANDIDATES, MAX_K, TOPIC_BOOST, VEC_CANDIDATES } from "./config.js";
 import { ftsMatchQuery } from "./fts.js";
 import { dedupeAdjacent, reciprocalRankFusion } from "./rrf.js";
@@ -203,32 +202,8 @@ function roundScore(score: number): number {
   return Math.round(score * 1000) / 1000;
 }
 
-function citationFromDetail(row: {
-  id: number;
-  document_id: string;
-  source_id: string;
-  source_kind: SourceKind;
-  mime: string | null;
-  doc_title: string | null;
-  doc_url: string | null;
-  course_title: string | null;
-  heading_path: string | null;
-  locator_json: string;
-  meta_json: string | null;
-}): Citation {
-  return buildCitation({
-    chunk_id: row.id,
-    document_id: row.document_id,
-    source_id: row.source_id,
-    source_kind: row.source_kind,
-    mime: row.mime,
-    doc_title: row.doc_title,
-    doc_url: row.doc_url,
-    course_title: row.course_title,
-    heading_path: row.heading_path,
-    locator: parseLocator(row.locator_json) as Locator,
-    meta: parseMeta(row.meta_json),
-  });
+function citationFromDetail(row: Parameters<typeof citationFromChunkRow>[0]): Citation {
+  return citationFromChunkRow(row);
 }
 
 function toView(

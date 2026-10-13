@@ -2,6 +2,20 @@ import type { SourceKind } from "../db/repo.js";
 import { MIME_PDF, MIME_PPTX } from "../ingest/mime.js";
 import type { Locator } from "../ingest/types.js";
 
+export type ChunkCitationRow = {
+  id: number;
+  document_id: string;
+  source_id: string;
+  source_kind: SourceKind;
+  mime: string | null;
+  doc_title: string | null;
+  doc_url: string | null;
+  course_title: string | null;
+  heading_path: string | null;
+  locator_json: string;
+  meta_json: string | null;
+};
+
 export type CitationKind = "pdf" | "pptx" | "web" | "canvas" | "youtube" | "transcript" | "file";
 
 export type Citation = {
@@ -89,6 +103,22 @@ export function citationKind(input: CitationInput): CitationKind {
     return "pptx";
   }
   return "file";
+}
+
+export function citationFromChunkRow(row: ChunkCitationRow): Citation {
+  return buildCitation({
+    chunk_id: row.id,
+    document_id: row.document_id,
+    source_id: row.source_id,
+    source_kind: row.source_kind,
+    mime: row.mime,
+    doc_title: row.doc_title,
+    doc_url: row.doc_url,
+    course_title: row.course_title,
+    heading_path: row.heading_path,
+    locator: parseLocator(row.locator_json) as Locator,
+    meta: parseMeta(row.meta_json),
+  });
 }
 
 export function buildCitation(input: CitationInput): Citation {

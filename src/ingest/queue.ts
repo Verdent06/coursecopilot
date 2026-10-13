@@ -5,6 +5,7 @@ import { log } from "../util/log.js";
 import { nowIso } from "../util/time.js";
 import type { Embedder } from "./embed.js";
 import { ingestFileSource } from "./sources/file.js";
+import { extractAndAssignTopics } from "./topics.js";
 import type { IngestResult, SkipReason } from "./types.js";
 
 export type IngestQueueOptions = {
@@ -105,6 +106,15 @@ export class IngestQueue {
         await this.embedSource(job.source_id, persistProgress, result.skipped);
       } catch (err) {
         log.warn("embedding step failed; leaving FTS-only index", err);
+      }
+      try {
+        const source = this.opts.repo.getSource(job.source_id);
+        if (source) {
+          persistProgress(0.97, "extracting topics", result.skipped);
+          await extractAndAssignTopics(this.opts.repo, source.course_id, this.embedder);
+        }
+      } catch (err) {
+        log.warn("topic heuristic failed", err);
       }
       const state = finishState(result);
       const message = finishMessage(state, result);
