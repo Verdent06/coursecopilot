@@ -58,10 +58,10 @@ try {
   await call("add_course", {
     title: "Automata, Computability, and Complexity",
     term: "Spring 2011",
-    course_id: "mit-6.045-s11",
+    course_id: "mit-6045-s11",
   });
   const queued = await call("add_source", {
-    course_id: "mit-6.045-s11",
+    course_id: "mit-6045-s11",
     kind: "website",
     uri: seed,
     options: { max_depth: 2, max_pages: 20 },
@@ -96,7 +96,7 @@ try {
   ];
   for (const query of queries) {
     process.stdout.write(`\n--- search_course ${JSON.stringify(query)} ---\n`);
-    await call("search_course", { course_id: "mit-6.045-s11", query, k: 5 });
+    await call("search_course", { course_id: "mit-6045-s11", query, k: 5 });
   }
 
   await client.close();
