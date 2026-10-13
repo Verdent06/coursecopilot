@@ -39,3 +39,9 @@ export const DEFAULT_MAX_DEPTH = 3;
 export const DEFAULT_MAX_PAGES = 300;
 export const CRAWL_CONCURRENCY = 2;
 export const CRAWL_DELAY_MS = 500;
+
+/** Minimum delay between lecture-capture API/media requests (respectful, spec-style). */
+export const LECTURE_CAPTURE_MIN_INTERVAL_MS = 500;
+
+/** Max retries for 429 / transient 5xx on lecture-capture fetches. */
+export const LECTURE_CAPTURE_MAX_RETRIES = 3;

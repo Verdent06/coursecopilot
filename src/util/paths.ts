@@ -29,3 +29,21 @@ export function getLocalModelPath(): string | undefined {
   const path = process.env.COURSECOPILOT_MODEL_PATH?.trim();
   return path || undefined;
 }
+
+/** Playwright persistent profile for interactive lecture-capture login. */
+export function getBrowserProfileDir(provider: string): string {
+  return join(getHomeDir(), "browser-profiles", provider);
+}
+
+/**
+ * Session cookies for a lecture-capture provider (Playwright storageState).
+ * Mode 0600. Never contains passwords.
+ */
+export function getSessionPath(provider: string): string {
+  return join(getHomeDir(), `${provider}-session.json`);
+}
+
+/** Directory for lazily installed optional tools (Playwright, tesseract.js). */
+export function getToolsDir(): string {
+  return join(getHomeDir(), "tools");
+}

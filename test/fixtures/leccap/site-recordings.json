@@ -1,0 +1,16 @@
+[
+  {
+    "recordingkey": "abc123",
+    "title": "Lecture",
+    "date": "10/12/2026",
+    "sitekey": "testsitexxx",
+    "sitename": "EECS 000 001 - Fall 2026"
+  },
+  {
+    "recordingkey": "def456",
+    "title": "Lecture",
+    "date": "10/14/2026",
+    "sitekey": "testsitexxx",
+    "sitename": "EECS 000 001 - Fall 2026"
+  }
+]

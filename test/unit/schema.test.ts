@@ -27,7 +27,7 @@ describe("schema migration", () => {
     close = undefined;
   });
 
-  it("creates the spec tables, FTS5, packs, and schema_version = 2", () => {
+  it("creates the spec tables, FTS5, packs, and schema_version = 3", () => {
     const { opened } = openMemory();
     close = () => opened.db.close();
 
@@ -43,7 +43,7 @@ describe("schema migration", () => {
     const version = opened.db.prepare("SELECT MAX(v) AS v FROM schema_version").get() as {
       v: number;
     };
-    expect(version.v).toBe(2);
+    expect(version.v).toBe(3);
 
     const fts = opened.db
       .prepare("SELECT sql FROM sqlite_master WHERE name = 'chunks_fts'")
@@ -90,7 +90,7 @@ describe("schema migration", () => {
     expect(pack.id).toBe("mit-6.045-s11");
   });
 
-  it("migrates a v1 DB: topics.origin pack + jobs.result_json", () => {
+  it("migrates a v1 DB: topics.origin pack + jobs.result_json + leccap kind", () => {
     const db = new Database(":memory:");
     close = () => db.close();
     db.exec(`
@@ -119,11 +119,53 @@ describe("schema migration", () => {
     const cols = db.prepare("PRAGMA table_info(jobs)").all() as Array<{ name: string }>;
     expect(cols.some((c) => c.name === "result_json")).toBe(true);
     const version = db.prepare("SELECT MAX(v) AS v FROM schema_version").get() as { v: number };
-    expect(version.v).toBe(2);
+    expect(version.v).toBe(3);
     const packOk = db.prepare("SELECT origin FROM topics WHERE id = 't2'").get() as {
       origin: string;
     };
     expect(packOk.origin).toBe("pack");
+    db.exec(`
+      INSERT INTO sources(id, course_id, kind, uri, status)
+        VALUES ('s-lc', 'c1', 'leccap', 'https://leccap.engin.umich.edu/leccap/site/x', 'queued');
+    `);
+    const kind = db.prepare("SELECT kind FROM sources WHERE id = 's-lc'").get() as { kind: string };
+    expect(kind.kind).toBe("leccap");
+  });
+
+  it("upgrades a v2 sources CHECK to allow leccap", () => {
+    const db = new Database(":memory:");
+    close = () => db.close();
+    db.exec(`
+      CREATE TABLE courses(
+        id TEXT PRIMARY KEY, title TEXT, term TEXT, exam_dates_json TEXT,
+        created_at TEXT, updated_at TEXT
+      );
+      CREATE TABLE sources(
+        id TEXT PRIMARY KEY,
+        course_id TEXT,
+        kind TEXT CHECK(kind IN ('website','canvas','file','folder','youtube','transcript')),
+        uri TEXT NOT NULL,
+        title TEXT,
+        config_json TEXT,
+        status TEXT CHECK(status IN ('queued','running','done','error','partial')),
+        error TEXT,
+        last_synced_at TEXT
+      );
+      CREATE TABLE schema_version(v INTEGER);
+      INSERT INTO schema_version(v) VALUES (2);
+      INSERT INTO courses(id, title) VALUES ('c1', 'T');
+      INSERT INTO sources(id, course_id, kind, uri, status)
+        VALUES ('s1', 'c1', 'youtube', 'https://youtu.be/x', 'done');
+    `);
+    migrate(db, false);
+    db.exec(`
+      INSERT INTO sources(id, course_id, kind, uri, status)
+        VALUES ('s2', 'c1', 'leccap', 'https://leccap.engin.umich.edu/leccap/site/x', 'queued');
+    `);
+    const version = db.prepare("SELECT MAX(v) AS v FROM schema_version").get() as { v: number };
+    expect(version.v).toBe(3);
+    const n = db.prepare("SELECT COUNT(*) AS n FROM sources").get() as { n: number };
+    expect(n.n).toBe(2);
   });
 
   it("loads sqlite-vec (or degrades cleanly)", () => {

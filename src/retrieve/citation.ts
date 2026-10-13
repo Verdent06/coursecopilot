@@ -18,7 +18,15 @@ export type ChunkCitationRow = {
   meta_json: string | null;
 };
 
-export type CitationKind = "pdf" | "pptx" | "web" | "canvas" | "youtube" | "transcript" | "file";
+export type CitationKind =
+  | "pdf"
+  | "pptx"
+  | "web"
+  | "canvas"
+  | "youtube"
+  | "transcript"
+  | "file"
+  | "lecture";
 
 export type Citation = {
   label: string;
@@ -102,6 +110,9 @@ export function citationKind(input: CitationInput): CitationKind {
   if (input.source_kind === "transcript") {
     return "transcript";
   }
+  if (input.source_kind === "leccap") {
+    return "lecture";
+  }
   if (input.source_kind === "website" || mime === "text/html") {
     return "web";
   }
@@ -171,6 +182,9 @@ function buildLabel(
     const inner = ["Canvas", module, item].filter(Boolean).join(" · ");
     return `[${inner}]`;
   }
+  if (kind === "lecture") {
+    return lectureLabel(courseTitle, title, loc);
+  }
   const parts = [courseTitle, title, where].filter((p): p is string => Boolean(p?.trim()));
   const seen = new Set<string>();
   const unique: string[] = [];
@@ -199,6 +213,16 @@ function locationLabel(input: {
     }
     return null;
   }
+  if (input.kind === "lecture") {
+    const bits: string[] = [];
+    if (input.loc.start_s != null) {
+      bits.push(`@ ${formatTimestamp(input.loc.start_s)}`);
+    }
+    if (input.slide != null) {
+      bits.push(`slide ${input.slide}`);
+    }
+    return bits.length > 0 ? bits.join(", ") : null;
+  }
   if (input.slide != null && (input.kind === "pptx" || input.slides || input.kind === "pdf")) {
     return `slide ${input.slide}`;
   }
@@ -221,6 +245,17 @@ function citationUrl(input: {
   slides: boolean;
 }): string {
   const base = input.loc.url || input.docUrl || input.loc.path || "";
+  if (input.kind === "lecture") {
+    const base = stripHash(input.loc.url || input.docUrl || "");
+    if (!base) {
+      return "";
+    }
+    const t = input.loc.start_s != null ? Math.floor(input.loc.start_s) : null;
+    if (t != null && t > 0) {
+      return `${base}#t=${t}`;
+    }
+    return base;
+  }
   if (input.kind === "youtube") {
     const id = input.loc.video_id || extractVideoId(base);
     const t = input.loc.start_s != null ? Math.floor(input.loc.start_s) : null;
@@ -240,6 +275,27 @@ function citationUrl(input: {
     return `${stripHash(base)}#${input.loc.anchor}`;
   }
   return base;
+}
+
+function lectureLabel(courseTitle: string | null, title: string, loc: Locator): string {
+  const lecture = loc.title || title;
+  const where: string[] = [];
+  if (loc.start_s != null) {
+    where.push(`@ ${formatTimestamp(loc.start_s)}`);
+  }
+  if (loc.slide != null) {
+    where.push(`slide ${loc.slide}`);
+  }
+  const lectureAndWhere =
+    where.length > 0 ? `${lecture} ${where[0]}${where[1] ? `, ${where[1]}` : ""}` : lecture;
+  const pdf =
+    loc.pdf_title && loc.page != null
+      ? `(${loc.pdf_title} p. ${loc.page})`
+      : loc.pdf_title
+        ? `(${loc.pdf_title})`
+        : null;
+  const parts = [courseTitle, lectureAndWhere, pdf].filter((p): p is string => Boolean(p?.trim()));
+  return `[${parts.join(" – ")}]`;
 }
 
 function lastHeading(path: string | null): string | null {

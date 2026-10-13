@@ -138,6 +138,31 @@ describe("citations", () => {
     expect(file.url).toBe("file:///tmp/office-hours.txt");
   });
 
+  it("labels a leccap lecture with time, slide, and player deep link", () => {
+    const c = buildCitation({
+      ...base,
+      source_kind: "leccap",
+      mime: "text/vtt",
+      doc_title: "Lecture 10/12",
+      doc_url: "https://leccap.engin.umich.edu/leccap/player/r/abc123",
+      heading_path: "Lecture 10/12 > 23:14–24:00",
+      locator: {
+        url: "https://leccap.engin.umich.edu/leccap/player/r/abc123",
+        recording_id: "abc123",
+        title: "Lecture 10/12",
+        start_s: 1394,
+        end_s: 1450,
+        slide: 12,
+        pdf_title: "lec10.pdf",
+        page: 12,
+      },
+    });
+    expect(c.kind).toBe("lecture");
+    expect(c.slide).toBe(12);
+    expect(c.label).toBe("[EECS 376 – Lecture 10/12 @ 23:14, slide 12 – (lec10.pdf p. 12)]");
+    expect(c.url).toBe("https://leccap.engin.umich.edu/leccap/player/r/abc123#t=1394");
+  });
+
   it("treats locator.slide or meta.as_slides as a slide deck", () => {
     expect(isSlideDeckPdf({ locator: { slide: 1 }, meta: {} })).toBe(true);
     expect(isSlideDeckPdf({ locator: { page: 1 }, meta: { as_slides: true } })).toBe(true);

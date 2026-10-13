@@ -4,7 +4,10 @@
  */
 function redact(value: unknown): unknown {
   if (typeof value === "string") {
-    return value.replaceAll(/Authorization:\s*\S+/gi, "Authorization: [redacted]");
+    return value
+      .replaceAll(/Authorization:\s*\S+/gi, "Authorization: [redacted]")
+      .replaceAll(/Cookie:\s*[^\n]+/gi, "Cookie: [redacted]")
+      .replaceAll(/Set-Cookie:\s*[^\n]+/gi, "Set-Cookie: [redacted]");
   }
   return value;
 }
