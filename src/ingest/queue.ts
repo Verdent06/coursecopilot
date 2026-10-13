@@ -24,6 +24,8 @@ export type IngestQueueOptions = {
   crawlDelayMs?: number;
   fetchFn?: FetchLike;
   leccap?: LeccapClient;
+  /** After heuristic topics (e.g. apply a pack lecture → topic map). */
+  onSourceDone?: (sourceId: string, courseId: string) => Promise<void> | void;
 };
 
 const UNIMPLEMENTED: Record<string, string> = {
@@ -131,6 +133,9 @@ export class IngestQueue {
         if (source && !unchangedIndex) {
           persistProgress(0.97, "extracting topics", result.skipped);
           await extractAndAssignTopics(this.opts.repo, source.course_id, this.embedder);
+        }
+        if (source && this.opts.onSourceDone) {
+          await this.opts.onSourceDone(source.id, source.course_id);
         }
       } catch (err) {
         log.warn("topic heuristic failed", err);

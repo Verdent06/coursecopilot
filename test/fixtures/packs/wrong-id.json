@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "not-the-filename",
+  "name": "Id mismatch",
+  "version": "1.0.0",
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://example.edu/course/"
+    }
+  ]
+}

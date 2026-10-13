@@ -4,7 +4,7 @@ Your classes, inside the AI you already use. Open-source MCP connector that turn
 
 No API key. The host AI does all generation; this server fetches, indexes, retrieves, and stores learning state.
 
-**Status:** M0–M5 (scaffold, database, files, hybrid search, website crawler, YouTube captions + VTT/SRT), **M8 (learning layer)**, **M9 (remote / HTTP mode)**, and **UMich CAEN Lecture Capture (`leccap`)** are implemented. Canvas and packs land in other milestones — see [docs/SPEC.md](docs/SPEC.md).
+**Status:** M0–M5 (scaffold, database, files, hybrid search, website crawler, YouTube captions + VTT/SRT), **M7 (course packs)**, **M8 (learning layer)**, **M9 (remote / HTTP mode)**, and **UMich CAEN Lecture Capture (`leccap`)** are implemented. Canvas lands in M6 — see [docs/SPEC.md](docs/SPEC.md).
 
 ## Requirements
 
@@ -50,7 +50,22 @@ Exact click paths, official-doc citations, and plan/eligibility gates: **[docs/r
 
 ChatGPT support needs a plan with developer mode — check [OpenAI's page](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt). Gemini app custom apps need Spark, a personal US Google account, 18+, English, Keep Activity on; school accounts should use Gemini CLI instead.
 
-## Tools (M0–M5, M8, M9)
+## Course packs
+
+A pack is a small JSON/YAML manifest: course id/name/term, **http(s) source URLs** (website, YouTube, PDF, transcript), and a lecture → topic map. It contains **no copyrighted content**. Classmates download materials from the original sources.
+
+```bash
+npx coursecopilot add-pack mit-6.045          # registry id (when the registry exists)
+npx coursecopilot add-pack ./my-course.json   # local manifest
+npx coursecopilot export-pack eecs376-f26 -o pack.json
+npx coursecopilot list-packs
+```
+
+`export-pack` keeps public website / YouTube / PDF / transcript URLs. It **drops Canvas, login-gated lecture-capture (leccap), and local files**, and may add a `connect_yourself` placeholder so the importer attaches those themselves.
+
+Registry index (cached 24h): `COURSECOPILOT_PACK_REGISTRY` or the default `https://raw.githubusercontent.com/Verdent06/coursecopilot-packs/main/index.json`. Schema: `packs/schema/pack.schema.json`.
+
+## Tools (M0–M5, M7–M9)
 
 | Tool | Role |
 |---|---|
@@ -72,10 +87,13 @@ ChatGPT support needs a plan with developer mode — check [OpenAI's page](https
 | `record_quiz_attempt` | Store graded items and update Beta topic mastery (with forgetting) |
 | `get_weak_spots` | Weakest topics plus suggested citations |
 | `get_study_plan` | Deterministic review → quiz plan, mixed exam_sim on the last day |
+| `add_pack` | Install a pack (registry id, URL, or path). Enqueues sources and applies the topic map |
+| `export_pack` | Write a links-only manifest. Drops Canvas, leccap, and local files |
+| `list_packs` | Browse the cached registry index and installed packs |
 
 Resources: `coursecopilot://courses`, `coursecopilot://document/{id}`, `coursecopilot://course/{id}/outline`, `coursecopilot://course/{id}/mastery`
 
-Prompt: `quiz_me_on_misses` (plus `quiz_me`, `study_session`, `exam_prep`, `explain_with_sources`).
+Prompts: `quiz_me_on_misses` (plus `quiz_me`, `study_session`, `exam_prep`, `explain_with_sources`, `add_my_course`).
 
 YouTube: `add_source` with `kind: "youtube"` and a watch, youtu.be, shorts, embed, or playlist URL. Captions are fetched (English manual, then English auto, then any language). If scraping fails, `yt-dlp` (if on PATH) and then an Internet Archive `youtube-<id>` VTT mirror are tried. Videos without captions are skipped with a pointer to export a VTT/SRT (or v1.1 Whisper). Playlists expand up to 50 videos.
 

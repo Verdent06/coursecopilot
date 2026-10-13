@@ -82,7 +82,9 @@ describe("MCP stdio e2e", () => {
     const names = listed.tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "add_course",
+      "add_pack",
       "add_source",
+      "export_pack",
       "fetch",
       "generate_quiz_context",
       "get_chunk",
@@ -92,6 +94,7 @@ describe("MCP stdio e2e", () => {
       "get_study_plan",
       "get_weak_spots",
       "list_courses",
+      "list_packs",
       "list_sources",
       "ping",
       "record_quiz_attempt",
@@ -104,6 +107,7 @@ describe("MCP stdio e2e", () => {
     ]);
     const prompts = await client.listPrompts();
     expect(prompts.prompts.map((p) => p.name).sort()).toEqual([
+      "add_my_course",
       "exam_prep",
       "explain_with_sources",
       "quiz_me",

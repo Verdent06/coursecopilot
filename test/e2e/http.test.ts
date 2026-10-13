@@ -112,6 +112,9 @@ describe("MCP HTTP e2e", () => {
     expect(names).toContain("get_study_plan");
     expect(names).toContain("set_topics");
     expect(names).toContain("get_course_outline");
+    expect(names).toContain("add_pack");
+    expect(names).toContain("export_pack");
+    expect(names).toContain("list_packs");
     console.log("http tools/list", names.join(", "));
 
     const ping = await client.callTool({ name: "ping", arguments: {} });

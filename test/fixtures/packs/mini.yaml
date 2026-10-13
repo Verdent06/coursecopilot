@@ -1,0 +1,31 @@
+schema: 1
+id: mini-yaml
+name: Mini YAML Pack
+institution: CourseCopilot Fixtures
+term: F26
+license_note: Original sample text for tests; links only in this pack.
+maintainers:
+  - verdent06
+version: 1.0.0
+sources:
+  - kind: website
+    url: https://example.edu/eecs3760/
+    max_depth: 2
+  - kind: pdf
+    url: https://example.edu/eecs3760/files/lec07.pdf
+    lecture: 7
+    as_slides: true
+  - kind: youtube
+    url: https://www.youtube.com/playlist?list=PLtestplaylist1xx
+  - kind: transcript
+    url: https://example.edu/eecs3760/lecture.vtt
+topics:
+  - lecture: 7
+    title: Pumping lemma
+    topics:
+      - Pumping lemma
+      - Nonregular languages
+exams:
+  - name: Midterm
+    topics:
+      - Pumping lemma
