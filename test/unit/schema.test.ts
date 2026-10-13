@@ -1,5 +1,6 @@
+import Database from "better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
-import { isVecEnabled } from "../../src/db/migrate.js";
+import { isVecEnabled, migrate } from "../../src/db/migrate.js";
 import { openMemory } from "../helpers/memory-db.js";
 
 const EXPECTED_TABLES = [
@@ -9,6 +10,7 @@ const EXPECTED_TABLES = [
   "courses",
   "documents",
   "jobs",
+  "packs",
   "quiz_attempts",
   "quiz_items",
   "schema_version",
@@ -25,7 +27,7 @@ describe("schema migration", () => {
     close = undefined;
   });
 
-  it("creates the spec tables, FTS5, and schema_version = 1", () => {
+  it("creates the spec tables, FTS5, packs, and schema_version = 2", () => {
     const { opened } = openMemory();
     close = () => opened.db.close();
 
@@ -41,7 +43,7 @@ describe("schema migration", () => {
     const version = opened.db.prepare("SELECT MAX(v) AS v FROM schema_version").get() as {
       v: number;
     };
-    expect(version.v).toBe(1);
+    expect(version.v).toBe(2);
 
     const fts = opened.db
       .prepare("SELECT sql FROM sqlite_master WHERE name = 'chunks_fts'")
@@ -68,6 +70,60 @@ describe("schema migration", () => {
       .prepare("SELECT rowid FROM chunks_fts WHERE chunks_fts MATCH 'pumping'")
       .all() as Array<{ rowid: number }>;
     expect(hits.length).toBe(1);
+  });
+
+  it("accepts topics.origin = pack and stores a packs row", () => {
+    const { opened } = openMemory();
+    close = () => opened.db.close();
+    const db = opened.db;
+    db.exec(`
+      INSERT INTO courses(id, title, created_at, updated_at) VALUES ('c1', 'T', 't', 't');
+      INSERT INTO topics(id, course_id, name, origin) VALUES ('t1', 'c1', 'Pumping lemma', 'pack');
+      INSERT INTO packs(id, course_id, version, origin, manifest_json, installed_at)
+        VALUES ('mit-6.045-s11', 'c1', '1.0.0', 'path', '{"schema":1}', 't');
+    `);
+    const topic = db.prepare("SELECT origin FROM topics WHERE id = 't1'").get() as {
+      origin: string;
+    };
+    expect(topic.origin).toBe("pack");
+    const pack = db.prepare("SELECT id FROM packs").get() as { id: string };
+    expect(pack.id).toBe("mit-6.045-s11");
+  });
+
+  it("migrates a v1 DB: topics.origin pack + jobs.result_json", () => {
+    const db = new Database(":memory:");
+    close = () => db.close();
+    db.exec(`
+      CREATE TABLE courses(
+        id TEXT PRIMARY KEY, title TEXT, term TEXT, exam_dates_json TEXT,
+        created_at TEXT, updated_at TEXT
+      );
+      CREATE TABLE topics(
+        id TEXT PRIMARY KEY,
+        course_id TEXT,
+        name TEXT,
+        origin TEXT CHECK(origin IN ('heuristic','host','user')),
+        UNIQUE(course_id, name)
+      );
+      CREATE TABLE jobs(
+        id TEXT PRIMARY KEY, source_id TEXT, state TEXT, progress REAL,
+        message TEXT, started_at TEXT, finished_at TEXT
+      );
+      CREATE TABLE schema_version(v INTEGER);
+      INSERT INTO schema_version(v) VALUES (1);
+      INSERT INTO courses(id, title) VALUES ('c1', 'T');
+      INSERT INTO topics(id, course_id, name, origin) VALUES ('t1', 'c1', 'A', 'heuristic');
+    `);
+    migrate(db, false);
+    db.exec(`INSERT INTO topics(id, course_id, name, origin) VALUES ('t2', 'c1', 'B', 'pack')`);
+    const cols = db.prepare("PRAGMA table_info(jobs)").all() as Array<{ name: string }>;
+    expect(cols.some((c) => c.name === "result_json")).toBe(true);
+    const version = db.prepare("SELECT MAX(v) AS v FROM schema_version").get() as { v: number };
+    expect(version.v).toBe(2);
+    const packOk = db.prepare("SELECT origin FROM topics WHERE id = 't2'").get() as {
+      origin: string;
+    };
+    expect(packOk.origin).toBe("pack");
   });
 
   it("loads sqlite-vec (or degrades cleanly)", () => {

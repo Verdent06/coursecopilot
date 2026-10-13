@@ -10,3 +10,5 @@
 *.woff binary
 *.woff2 binary
 *.node binary
+*.pdf binary
+*.pptx binary

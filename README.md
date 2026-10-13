@@ -4,7 +4,7 @@ Your classes, inside the AI you already use. Open-source MCP connector that turn
 
 No API key. The host AI does all generation; this server fetches, indexes, retrieves, and stores learning state.
 
-**Status:** milestones M0 (scaffold) and M1 (database + courses) are implemented. Ingestion, search, and quiz/study tools land in later milestones — see [docs/SPEC.md](docs/SPEC.md).
+**Status:** milestones M0 (scaffold), M1 (database + courses), and M2 (files pipeline) are implemented. Search, website crawl, and quiz/study tools land in later milestones — see [docs/SPEC.md](docs/SPEC.md).
 
 ## Requirements
 
@@ -33,7 +33,7 @@ npx @modelcontextprotocol/inspector node dist/cli.js
 
 Data lives in `~/.coursecopilot/cc.db` (override with `COURSECOPILOT_HOME`).
 
-## Tools (M0/M1)
+## Tools (M0–M2)
 
 | Tool | Role |
 |---|---|
@@ -41,6 +41,10 @@ Data lives in `~/.coursecopilot/cc.db` (override with `COURSECOPILOT_HOME`).
 | `add_course` | Create a course |
 | `list_courses` | List courses, source/chunk counts, exams |
 | `set_exam` | Add or replace an exam date |
+| `add_source` | Enqueue a file or folder (PDF, PPTX, Markdown, TXT). Other kinds land in later milestones. |
+| `get_ingest_status` | Poll an ingest job (`docs`, `chunks`, `skipped`) |
+| `list_sources` | List sources on a course |
+| `remove_source` | Delete a source and its chunks |
 
 Resource: `coursecopilot://courses`
 
