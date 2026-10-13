@@ -17,3 +17,9 @@ export const FOLDER_FILE_CAP = 2000;
 
 /** A PDF is flagged needs_ocr when most pages have fewer than this many characters. */
 export const OCR_CHAR_THRESHOLD = 20;
+
+/** Topic-name cosine for heuristic dedupe (spec §9.6). */
+export const TOPIC_DEDUP_COSINE = 0.85;
+
+/** Assign leftover chunks to nearest topic centroid above this cosine. */
+export const TOPIC_ASSIGN_COSINE = 0.4;

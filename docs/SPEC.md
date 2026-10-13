@@ -806,3 +806,19 @@ Chosen while implementing search + citations.
 7. **`get_ingest_status` embedding messages.** While the model is fetching, the running job message is `downloading embedding model`; then `embedding N chunk(s)`. Failure of this step does not fail the job.
 8. **Transformers.js also depends on `onnxruntime-node` and `sharp`.** They are transitive. If either native load fails, search degrades to FTS-only rather than crashing the MCP server.
 9. **Golden fixture.** `test/helpers/sample-files.ts` builds a 14-page landscape `lec07.pdf` whose page 14 is the unique "a^n b^n is not regular" proof. Retrieval tests assert that query as top-1 with citation `slide 14`.
+
+---
+
+## 25. Spec amendments (M8)
+
+Chosen while implementing the learning layer.
+
+1. **No schema bump.** Topics, quiz_attempts, quiz_items, and topic_mastery already exist from M1/M2 (`schema_version` stays **2**).
+2. **Structured output wrappers.** MCP `structuredContent` is an object, so `get_weak_spots` returns `{ spots: [...] }` and `set_topics` returns `{ topic_ids }`. `generate_quiz_context` also includes `instructions_version` (currently 1) next to the fixed instructions string.
+3. **`get_course_outline` ships with M8.** Needed so the host can see heuristic topics and propose `set_topics`. Output is `{ course_id, title, sources[{documents}], lectures, topics }`.
+4. **Resources.** `coursecopilot://course/{id}/outline` and `coursecopilot://course/{id}/mastery` are registered (JSON).
+5. **Prompts.** M8 registers `quiz_me_on_misses`, `quiz_me`, `study_session`, `exam_prep`, and `explain_with_sources`. `add_my_course` waits for packs (M7); `whats_due` waits for Canvas (M6). Prompt `n` / `minutes` args are strings because MCP prompt arguments are stringly typed on some hosts.
+6. **Canvas due dates as exam seeds are not in M8.** There is no Canvas client yet (M6). `get_study_plan` rationale tells the host to call `set_exam`; Canvas seeding stays with M6.
+7. **Heuristic topics run after ingest.** Candidates come from document titles, slide titles, and heading_path segments; generic "Page N" / "Slide N" / filenames are dropped. Dedupe cosine 0.85 and leftover-chunk centroid assignment 0.4 use the local embedder when available. Host `set_topics` does not get overwritten.
+8. **`record_quiz_attempt` attempt ids are `qa_<ulid>`.** Item ids are `qi_<ulid>`. Topic ids created here are `t_<ulid>`. `correct` accepts boolean or 0/1.
+9. **Planner dates are UTC calendar days** from `now` (injectable in tests). D = max(1, days until exam) or 7 if none. Last day is a mixed `practice` (exam_sim) session; topic-attributed minutes still go to review/quiz sessions so "A gets the most minutes" is testable.

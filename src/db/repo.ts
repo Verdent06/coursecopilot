@@ -110,6 +110,35 @@ export type DocumentRow = {
   meta_json: string | null;
 };
 
+export type TopicOrigin = "heuristic" | "host" | "user" | "pack";
+
+export type TopicRow = {
+  id: string;
+  course_id: string;
+  name: string;
+  origin: TopicOrigin;
+};
+
+export type TopicListItem = TopicRow & { chunk_count: number };
+
+export type MasteryRow = {
+  course_id: string;
+  topic_id: string;
+  alpha: number;
+  beta: number;
+  last_seen_at: string | null;
+  n_attempts: number;
+};
+
+export type DocumentListItem = DocumentRow & { chunk_count: number };
+
+export type CourseInfo = {
+  course_id: string;
+  title: string;
+  term: string | null;
+  exams: Exam[];
+};
+
 const CHUNK_DETAIL_SQL = `
   SELECT
     c.id, c.document_id, c.course_id, c.ord, c.text, c.locator_json, c.heading_path, c.token_count,
@@ -734,6 +763,254 @@ export class CourseRepo {
          FROM chunks WHERE course_id = ? ORDER BY document_id ASC, ord ASC`,
       )
       .all(courseId) as ChunkRow[];
+  }
+
+  getCourseInfo(id: string): CourseInfo | undefined {
+    const row = this.db
+      .prepare("SELECT id, title, term, exam_dates_json FROM courses WHERE id = ?")
+      .get(id) as
+      | { id: string; title: string; term: string | null; exam_dates_json: string }
+      | undefined;
+    if (!row) {
+      return undefined;
+    }
+    return {
+      course_id: row.id,
+      title: row.title,
+      term: row.term,
+      exams: parseExams(row.exam_dates_json),
+    };
+  }
+
+  listDocumentsForCourse(courseId: string): DocumentListItem[] {
+    return this.db
+      .prepare(
+        `SELECT
+           d.id, d.source_id, d.course_id, d.url, d.title, d.mime, d.meta_json,
+           (SELECT COUNT(*) FROM chunks c WHERE c.document_id = d.id) AS chunk_count
+         FROM documents d
+         WHERE d.course_id = ?
+         ORDER BY d.id ASC`,
+      )
+      .all(courseId) as DocumentListItem[];
+  }
+
+  listTopics(courseId: string): TopicListItem[] {
+    return this.db
+      .prepare(
+        `SELECT
+           t.id, t.course_id, t.name, t.origin,
+           (SELECT COUNT(*) FROM chunk_topics ct WHERE ct.topic_id = t.id) AS chunk_count
+         FROM topics t
+         WHERE t.course_id = ?
+         ORDER BY t.name COLLATE NOCASE ASC, t.id ASC`,
+      )
+      .all(courseId) as TopicListItem[];
+  }
+
+  getTopic(id: string): TopicRow | undefined {
+    return this.db.prepare("SELECT id, course_id, name, origin FROM topics WHERE id = ?").get(id) as
+      | TopicRow
+      | undefined;
+  }
+
+  getTopicByName(courseId: string, name: string): TopicRow | undefined {
+    return this.db
+      .prepare(
+        `SELECT id, course_id, name, origin FROM topics
+         WHERE course_id = ? AND lower(name) = lower(?)`,
+      )
+      .get(courseId, name.trim()) as TopicRow | undefined;
+  }
+
+  upsertTopic(input: {
+    id: string;
+    course_id: string;
+    name: string;
+    origin: TopicOrigin;
+  }): TopicRow {
+    const existing = this.getTopicByName(input.course_id, input.name);
+    if (existing) {
+      const name = input.name.trim();
+      const origin =
+        existing.origin === "heuristic" && input.origin !== "heuristic"
+          ? input.origin
+          : existing.origin;
+      if (existing.name !== name || existing.origin !== origin) {
+        this.db
+          .prepare("UPDATE topics SET name = ?, origin = ? WHERE id = ?")
+          .run(name, origin, existing.id);
+        return { ...existing, name, origin };
+      }
+      return existing;
+    }
+    this.db
+      .prepare("INSERT INTO topics(id, course_id, name, origin) VALUES (?, ?, ?, ?)")
+      .run(input.id, input.course_id, input.name.trim(), input.origin);
+    const row = this.getTopic(input.id);
+    if (!row) {
+      throw new RepoError("failed to insert topic");
+    }
+    return row;
+  }
+
+  listChunksForTopic(topicId: string): Array<ChunkDetail & { weight: number }> {
+    return this.db
+      .prepare(
+        `SELECT
+           c.id, c.document_id, c.course_id, c.ord, c.text, c.locator_json, c.heading_path, c.token_count,
+           s.id AS source_id, s.kind AS source_kind,
+           d.mime AS mime, d.title AS doc_title, d.url AS doc_url, d.meta_json AS meta_json,
+           co.title AS course_title,
+           ct.weight AS weight
+         FROM chunk_topics ct
+         JOIN chunks c ON c.id = ct.chunk_id
+         JOIN documents d ON d.id = c.document_id
+         JOIN sources s ON s.id = d.source_id
+         JOIN courses co ON co.id = c.course_id
+         WHERE ct.topic_id = ?
+         ORDER BY ct.weight DESC, c.id ASC`,
+      )
+      .all(topicId) as Array<ChunkDetail & { weight: number }>;
+  }
+
+  chunkHasAnyTopic(chunkId: number): boolean {
+    const row = this.db
+      .prepare("SELECT 1 AS ok FROM chunk_topics WHERE chunk_id = ? LIMIT 1")
+      .get(chunkId) as { ok: number } | undefined;
+    return Boolean(row);
+  }
+
+  replaceChunkTopics(
+    topicId: string,
+    assignments: Array<{ chunk_id: number; weight: number }>,
+  ): void {
+    const run = this.db.transaction(() => {
+      this.db.prepare("DELETE FROM chunk_topics WHERE topic_id = ?").run(topicId);
+      const ins = this.db.prepare(
+        "INSERT OR REPLACE INTO chunk_topics(chunk_id, topic_id, weight) VALUES (?, ?, ?)",
+      );
+      for (const item of assignments) {
+        ins.run(item.chunk_id, topicId, item.weight);
+      }
+    });
+    run();
+  }
+
+  addChunkTopics(topicId: string, assignments: Array<{ chunk_id: number; weight: number }>): void {
+    const ins = this.db.prepare(
+      "INSERT OR REPLACE INTO chunk_topics(chunk_id, topic_id, weight) VALUES (?, ?, ?)",
+    );
+    const run = this.db.transaction(() => {
+      for (const item of assignments) {
+        ins.run(item.chunk_id, topicId, item.weight);
+      }
+    });
+    run();
+  }
+
+  findChunksMatchingKeywords(courseId: string, keywords: string[]): ChunkDetail[] {
+    const needles = keywords.map((k) => k.trim().toLowerCase()).filter(Boolean);
+    if (needles.length === 0) {
+      return [];
+    }
+    const chunks = this.db
+      .prepare(`${CHUNK_DETAIL_SQL} WHERE c.course_id = ? ORDER BY c.id ASC`)
+      .all(courseId) as ChunkDetail[];
+    return chunks.filter((chunk) => {
+      const hay =
+        `${chunk.text}\n${chunk.heading_path ?? ""}\n${chunk.doc_title ?? ""}`.toLowerCase();
+      return needles.some((n) => hay.includes(n));
+    });
+  }
+
+  requireChunkInCourse(chunkId: number, courseId: string): void {
+    const row = this.db
+      .prepare("SELECT 1 AS ok FROM chunks WHERE id = ? AND course_id = ?")
+      .get(chunkId, courseId) as { ok: number } | undefined;
+    if (!row) {
+      throw new RepoError(`chunk_id ${chunkId} is not in course "${courseId}"`);
+    }
+  }
+
+  getMastery(courseId: string, topicId: string): MasteryRow | undefined {
+    return this.db
+      .prepare(
+        `SELECT course_id, topic_id, alpha, beta, last_seen_at, n_attempts
+         FROM topic_mastery WHERE course_id = ? AND topic_id = ?`,
+      )
+      .get(courseId, topicId) as MasteryRow | undefined;
+  }
+
+  listMastery(courseId: string): MasteryRow[] {
+    return this.db
+      .prepare(
+        `SELECT course_id, topic_id, alpha, beta, last_seen_at, n_attempts
+         FROM topic_mastery WHERE course_id = ?`,
+      )
+      .all(courseId) as MasteryRow[];
+  }
+
+  upsertMastery(row: MasteryRow): void {
+    this.db
+      .prepare(
+        `INSERT INTO topic_mastery(course_id, topic_id, alpha, beta, last_seen_at, n_attempts)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(course_id, topic_id) DO UPDATE SET
+           alpha = excluded.alpha,
+           beta = excluded.beta,
+           last_seen_at = excluded.last_seen_at,
+           n_attempts = excluded.n_attempts`,
+      )
+      .run(row.course_id, row.topic_id, row.alpha, row.beta, row.last_seen_at, row.n_attempts);
+  }
+
+  insertQuizAttempt(input: {
+    id: string;
+    course_id: string;
+    created_at: string;
+    mode: string;
+  }): void {
+    this.db
+      .prepare("INSERT INTO quiz_attempts(id, course_id, created_at, mode) VALUES (?, ?, ?, ?)")
+      .run(input.id, input.course_id, input.created_at, input.mode);
+  }
+
+  insertQuizItem(input: {
+    id: string;
+    attempt_id: string;
+    topic_id: string | null;
+    question: string;
+    user_answer: string;
+    correct: number;
+    partial_credit: number | null;
+    difficulty: number | null;
+    confidence: number | null;
+    cited_chunk_ids: string | null;
+  }): void {
+    this.db
+      .prepare(
+        `INSERT INTO quiz_items(
+           id, attempt_id, topic_id, question, user_answer, correct, partial_credit,
+           difficulty, confidence, cited_chunk_ids
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        input.id,
+        input.attempt_id,
+        input.topic_id,
+        input.question,
+        input.user_answer,
+        input.correct,
+        input.partial_credit,
+        input.difficulty,
+        input.confidence,
+        input.cited_chunk_ids,
+      );
+  }
+
+  runInTransaction<T>(fn: () => T): T {
+    return this.db.transaction(fn)();
   }
 
   unknownCourseMessage(courseId: string): string {
