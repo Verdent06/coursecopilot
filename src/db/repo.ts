@@ -90,6 +90,38 @@ export type ChunkRow = {
   token_count: number | null;
 };
 
+export type ChunkDetail = ChunkRow & {
+  source_id: string;
+  source_kind: SourceKind;
+  mime: string | null;
+  doc_title: string | null;
+  doc_url: string | null;
+  meta_json: string | null;
+  course_title: string | null;
+};
+
+export type DocumentRow = {
+  id: string;
+  source_id: string;
+  course_id: string;
+  url: string | null;
+  title: string | null;
+  mime: string | null;
+  meta_json: string | null;
+};
+
+const CHUNK_DETAIL_SQL = `
+  SELECT
+    c.id, c.document_id, c.course_id, c.ord, c.text, c.locator_json, c.heading_path, c.token_count,
+    s.id AS source_id, s.kind AS source_kind,
+    d.mime AS mime, d.title AS doc_title, d.url AS doc_url, d.meta_json AS meta_json,
+    co.title AS course_title
+  FROM chunks c
+  JOIN documents d ON d.id = c.document_id
+  JOIN sources s ON s.id = d.source_id
+  JOIN courses co ON co.id = c.course_id
+`;
+
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CourseRepo {
@@ -307,6 +339,7 @@ export class CourseRepo {
       )
       .get(sourceId) as { n: number };
     const removed = countRow.n;
+    this.deleteEmbeddingsForSource(sourceId);
     this.db
       .prepare(
         `DELETE FROM chunk_topics WHERE chunk_id IN (
@@ -451,14 +484,15 @@ export class CourseRepo {
       heading_path: string | null;
       token_count: number | null;
     }>,
-  ): void {
+  ): number[] {
+    const ids: number[] = [];
     const stmt = this.db.prepare(
       `INSERT INTO chunks(document_id, course_id, ord, text, locator_json, heading_path, token_count)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     );
     const runMany = this.db.transaction((rows: typeof chunks) => {
       for (const row of rows) {
-        stmt.run(
+        const info = stmt.run(
           row.document_id,
           row.course_id,
           row.ord,
@@ -467,9 +501,212 @@ export class CourseRepo {
           row.heading_path,
           row.token_count,
         );
+        ids.push(Number(info.lastInsertRowid));
       }
     });
     runMany(chunks);
+    return ids;
+  }
+
+  insertEmbeddings(rows: Array<{ id: number; embedding: Float32Array; course_id: string }>): void {
+    const meta = this.vecMeta();
+    if (!meta.enabled || rows.length === 0) {
+      return;
+    }
+    const insert = this.db.prepare("INSERT INTO chunks_vec(rowid, embedding) VALUES (?, ?)");
+    const del = this.db.prepare("DELETE FROM chunks_vec WHERE rowid = ?");
+    const runMany = this.db.transaction((items: typeof rows) => {
+      for (const item of items) {
+        const id = BigInt(Math.trunc(Number(item.id)));
+        del.run(id);
+        insert.run(id, item.embedding);
+      }
+    });
+    runMany(rows);
+  }
+
+  deleteEmbeddingsForSource(sourceId: string): void {
+    if (!this.vecMeta().enabled) {
+      return;
+    }
+    this.db
+      .prepare(
+        `DELETE FROM chunks_vec WHERE rowid IN (
+           SELECT c.id FROM chunks c
+           JOIN documents d ON d.id = c.document_id
+           WHERE d.source_id = ?
+         )`,
+      )
+      .run(sourceId);
+  }
+
+  listChunksForSource(sourceId: string): Array<{ id: number; text: string; course_id: string }> {
+    return this.db
+      .prepare(
+        `SELECT c.id, c.text, c.course_id
+         FROM chunks c
+         JOIN documents d ON d.id = c.document_id
+         WHERE d.source_id = ?
+         ORDER BY c.id ASC`,
+      )
+      .all(sourceId) as Array<{ id: number; text: string; course_id: string }>;
+  }
+
+  resolveCourseId(courseId?: string): string {
+    if (courseId) {
+      this.requireCourse(courseId);
+      return courseId;
+    }
+    const all = this.listCourses();
+    if (all.length === 1 && all[0]) {
+      return all[0].course_id;
+    }
+    if (all.length === 0) {
+      throw new RepoError("course_id is required. No courses yet. Call add_course first.");
+    }
+    throw new RepoError(
+      `course_id is required when multiple courses exist. Valid ids: ${this.idList()}`,
+    );
+  }
+
+  getDocument(id: string): DocumentRow | undefined {
+    return this.db
+      .prepare(
+        `SELECT id, source_id, course_id, url, title, mime, meta_json FROM documents WHERE id = ?`,
+      )
+      .get(id) as DocumentRow | undefined;
+  }
+
+  getChunkDetail(id: number): ChunkDetail | undefined {
+    return this.db.prepare(`${CHUNK_DETAIL_SQL} WHERE c.id = ?`).get(id) as ChunkDetail | undefined;
+  }
+
+  getChunkDetails(ids: number[]): ChunkDetail[] {
+    if (ids.length === 0) {
+      return [];
+    }
+    const placeholders = ids.map(() => "?").join(", ");
+    return this.db
+      .prepare(`${CHUNK_DETAIL_SQL} WHERE c.id IN (${placeholders})`)
+      .all(...ids) as ChunkDetail[];
+  }
+
+  listChunksForDocument(documentId: string): ChunkDetail[] {
+    return this.db
+      .prepare(`${CHUNK_DETAIL_SQL} WHERE c.document_id = ? ORDER BY c.ord ASC, c.id ASC`)
+      .all(documentId) as ChunkDetail[];
+  }
+
+  listNeighborChunks(documentId: string, ord: number, context: number): ChunkDetail[] {
+    const radius = Math.max(0, Math.floor(context));
+    return this.db
+      .prepare(
+        `${CHUNK_DETAIL_SQL}
+         WHERE c.document_id = ? AND c.ord BETWEEN ? AND ?
+         ORDER BY c.ord ASC, c.id ASC`,
+      )
+      .all(documentId, ord - radius, ord + radius) as ChunkDetail[];
+  }
+
+  searchFts(
+    courseId: string,
+    matchQuery: string,
+    limit: number,
+    sourceKinds?: SourceKind[],
+  ): number[] {
+    const kinds = sourceKinds && sourceKinds.length > 0 ? sourceKinds : null;
+    try {
+      const rows = kinds
+        ? (this.db
+            .prepare(
+              `SELECT c.id AS id
+               FROM chunks_fts
+               JOIN chunks c ON c.id = chunks_fts.rowid
+               JOIN documents d ON d.id = c.document_id
+               JOIN sources s ON s.id = d.source_id
+               WHERE chunks_fts MATCH ? AND c.course_id = ? AND s.kind IN (${kinds.map(() => "?").join(", ")})
+               ORDER BY bm25(chunks_fts)
+               LIMIT ?`,
+            )
+            .all(matchQuery, courseId, ...kinds, limit) as Array<{ id: number }>)
+        : (this.db
+            .prepare(
+              `SELECT c.id AS id
+               FROM chunks_fts
+               JOIN chunks c ON c.id = chunks_fts.rowid
+               WHERE chunks_fts MATCH ? AND c.course_id = ?
+               ORDER BY bm25(chunks_fts)
+               LIMIT ?`,
+            )
+            .all(matchQuery, courseId, limit) as Array<{ id: number }>);
+      return rows.map((r) => r.id);
+    } catch {
+      return [];
+    }
+  }
+
+  searchVec(
+    courseId: string,
+    embedding: Float32Array,
+    limit: number,
+    sourceKinds?: SourceKind[],
+  ): number[] {
+    const meta = this.vecMeta();
+    if (!meta.enabled) {
+      return [];
+    }
+    try {
+      const rows = this.db
+        .prepare(
+          `SELECT v.rowid AS id
+           FROM chunks_vec v
+           JOIN chunks c ON c.id = v.rowid
+           WHERE v.embedding MATCH ? AND k = ? AND c.course_id = ?`,
+        )
+        .all(embedding, Math.max(limit * 3, limit), courseId) as Array<{ id: number }>;
+      let ids = rows.map((r) => r.id);
+      if (sourceKinds && sourceKinds.length > 0) {
+        const details = this.getChunkDetails(ids);
+        const allow = new Set(sourceKinds);
+        ids = details.filter((d) => allow.has(d.source_kind)).map((d) => d.id);
+      }
+      return ids.slice(0, limit);
+    } catch {
+      return [];
+    }
+  }
+
+  chunkMatchesTopic(chunkId: number, courseId: string, topic: string): boolean {
+    const needle = topic.trim().toLowerCase();
+    if (!needle) {
+      return false;
+    }
+    const row = this.db
+      .prepare("SELECT heading_path FROM chunks WHERE id = ? AND course_id = ?")
+      .get(chunkId, courseId) as { heading_path: string | null } | undefined;
+    if (row?.heading_path?.toLowerCase().includes(needle)) {
+      return true;
+    }
+    const linked = this.db
+      .prepare(
+        `SELECT 1 AS ok
+         FROM chunk_topics ct
+         JOIN topics t ON t.id = ct.topic_id
+         WHERE ct.chunk_id = ? AND t.course_id = ? AND lower(t.name) = ?`,
+      )
+      .get(chunkId, courseId, needle) as { ok: number } | undefined;
+    return Boolean(linked);
+  }
+
+  vecMeta(): { enabled: boolean } {
+    try {
+      const row = this.db
+        .prepare("SELECT sql FROM sqlite_master WHERE name = 'chunks_vec'")
+        .get() as { sql: string } | undefined;
+      return { enabled: Boolean(row?.sql) };
+    } catch {
+      return { enabled: false };
+    }
   }
 
   countDocuments(sourceId: string): number {

@@ -19,6 +19,18 @@ describe("PDF extractor", () => {
     expect(doc.segments[0]?.locator.path).toBe("file:///tmp/lec07.pdf");
   });
 
+  it("marks landscape PDFs as slide decks with slide locators", async () => {
+    const bytes = new Uint8Array(
+      buildSimplePdf(["Slide title: Pumping lemma", "Proof on the next slide"], {
+        landscape: true,
+      }),
+    );
+    const doc = await extractPdf(bytes, "file:///tmp/deck.pdf", "/tmp/deck.pdf");
+    expect(doc.meta.as_slides).toBe(true);
+    expect(doc.segments[0]?.locator.slide).toBe(1);
+    expect(doc.segments[0]?.headingPath).toMatch(/^Slide /);
+  });
+
   it("flags needs_ocr when most pages are nearly empty", async () => {
     const bytes = new Uint8Array(buildSimplePdf(["ab", "cd"]));
     const doc = await extractPdf(bytes, "file:///tmp/scan.pdf", "/tmp/scan.pdf");

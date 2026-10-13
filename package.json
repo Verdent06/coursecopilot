@@ -45,6 +45,7 @@
     "check:no-llm": "node scripts/check-no-llm-sdks.mjs"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
     "@modelcontextprotocol/server": "^2.3.1",
     "better-sqlite3": "12.9.0",
     "commander": "^14.0.0",

@@ -18,6 +18,7 @@ export type OpenedDatabase = {
   db: Database.Database;
   path: string;
   vecEnabled: boolean;
+  vecHasCourseId: boolean;
 };
 
 export function openDatabase(options: OpenDatabaseOptions = {}): OpenedDatabase {
@@ -30,24 +31,18 @@ export function openDatabase(options: OpenDatabaseOptions = {}): OpenedDatabase 
   db.pragma("foreign_keys = ON");
   db.pragma("busy_timeout = 5000");
   const vecEnabled = loadSqliteVec(db);
-  migrate(db, vecEnabled);
-  return { db, path, vecEnabled };
+  const vecHasCourseId = migrate(db, vecEnabled);
+  return { db, path, vecEnabled, vecHasCourseId };
 }
 
-export function migrate(db: Database.Database, vecEnabled: boolean): void {
+export function migrate(db: Database.Database, vecEnabled: boolean): boolean {
   const sql = readFileSync(SCHEMA_PATH, "utf8");
-  const [required, optionalVec] = sql.split("-- @optional sqlite-vec");
+  const [required] = sql.split("-- @optional sqlite-vec");
   if (!required) {
     throw new Error(`Empty schema at ${SCHEMA_PATH}`);
   }
   db.exec(required);
-  if (vecEnabled && optionalVec?.trim()) {
-    try {
-      db.exec(optionalVec);
-    } catch (err) {
-      log.warn("failed to create chunks_vec virtual table", err);
-    }
-  }
+  const vecHasCourseId = vecEnabled ? ensureChunksVec(db) : false;
   migrateToV2(db);
   const current = db.prepare("SELECT MAX(v) AS v FROM schema_version").get() as {
     v: number | null;
@@ -55,6 +50,32 @@ export function migrate(db: Database.Database, vecEnabled: boolean): void {
   if (current.v == null || current.v < SCHEMA_VERSION) {
     db.prepare("INSERT INTO schema_version(v) VALUES (?)").run(SCHEMA_VERSION);
   }
+  return vecHasCourseId;
+}
+
+/**
+ * Create chunks_vec. M2 DBs that already have the spec table are kept.
+ * Mid-M3 experiments with extra columns are rebuilt (no embeddings stored yet).
+ */
+function ensureChunksVec(db: Database.Database): boolean {
+  const existing = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'chunks_vec'")
+    .get() as { sql: string } | undefined;
+  if (existing?.sql && /course_id|chunk_id/i.test(existing.sql)) {
+    try {
+      db.exec("DROP TABLE chunks_vec");
+    } catch (err) {
+      log.warn("could not drop legacy chunks_vec", err);
+    }
+  } else if (existing) {
+    return false;
+  }
+  try {
+    db.exec("CREATE VIRTUAL TABLE IF NOT EXISTS chunks_vec USING vec0(embedding float[384]);");
+  } catch (err) {
+    log.warn("failed to create chunks_vec virtual table", err);
+  }
+  return false;
 }
 
 /**

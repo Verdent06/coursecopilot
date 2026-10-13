@@ -790,3 +790,19 @@ Chosen while implementing the files pipeline.
 9. **Local-path guard.** `createServer({ allowLocalPaths: false })` rejects file/folder ingest (the M9 `--allow-path` flag). Stdio defaults to allowed. Paths must be absolute (filesystem path or `file://`).
 10. **Folder extras.** Dotfiles, dot-directories, and symlinks are ignored. After 2,000 files the rest of the tree is skipped with one cap reason. Unsupported extensions are skipped, not a job failure. A job with some extracted docs and some read errors is `partial`.
 11. **PPTX fixtures.** Tests generate a minimal OOXML zip (slides + optional notes) rather than committing a PowerPoint binary. PDF fixtures are generated as PDF 1.4 with Helvetica (standard 14) so extraction does not need embedded fonts. Sample text is original, not course content.
+
+---
+
+## 24. Spec amendments (M3)
+
+Chosen while implementing search + citations.
+
+1. **`get_document` tool.** M3's table lists `search_course` and `get_chunk`. Hosts that ignore resources still need a way to pull a full source, so M3 also registers `get_document({document_id})` returning `{document_id, title, mime, url, text, chunks:[{chunk_id,text,citation,…}]}`. The resource `coursecopilot://document/{id}` exposes the same extracted Markdown.
+2. **MCP structured output.** `search_course` already returns an object `{results, degraded?}`. `get_chunk` returns `{chunk, neighbors, citation}`. `get_document` wraps as above.
+3. **`degraded: "keyword_only"`.** Added when sqlite-vec is missing, the MiniLM/ONNX load fails, `COURSECOPILOT_DISABLE_EMBEDDINGS=1`, or vector search throws. Ingest still succeeds; FTS5 remains the index.
+4. **`chunks_vec` rowid binding.** Spec DDL `vec0(embedding float[384])` is unchanged (`chunk.id` is the vec rowid). **better-sqlite3 must bind that rowid as `BigInt`:** a JS number is rejected (`Only integers are allowed for primary key values on chunks_vec`). Course filtering is a JOIN back to `chunks`, not a vec0 auxiliary column (sqlite-vec 0.1.9 rejects auxiliary columns in KNN `WHERE`). `schema_version` stays **2**.
+5. **Slide-deck PDFs.** Pack/topic maps (M7) are not available yet. A PDF is cited as `slide N` when (a) `add_source` options include `as_slides: true`, (b) the filename matches `slide`/`slides`, or (c) a majority of sampled pages are landscape. Locators then store both `page` and `slide` (same number); the URL still uses `#page=N`.
+6. **Embeddings.** `@huggingface/transformers@3.8.1` runs `Xenova/all-MiniLM-L6-v2`. On Node CPU the library defaults to **fp32** (not the ~23 MB quantized build; q4f16 is known to fail in ONNX Runtime on CPU). Cache directory is `HF_HOME` / `TRANSFORMERS_CACHE` / `~/.cache/huggingface` so it hits the CI cache. `COURSECOPILOT_MODEL_PATH` points at a local model dir (or a cache root) and disables remote downloads. A worker thread (`src/ingest/embed-worker.ts`) is preferred; in-process Transformers.js is the fallback if the worker cannot start. Unit tests use a hash stub embedder and never need the network.
+7. **`get_ingest_status` embedding messages.** While the model is fetching, the running job message is `downloading embedding model`; then `embedding N chunk(s)`. Failure of this step does not fail the job.
+8. **Transformers.js also depends on `onnxruntime-node` and `sharp`.** They are transitive. If either native load fails, search degrades to FTS-only rather than crashing the MCP server.
+9. **Golden fixture.** `test/helpers/sample-files.ts` builds a 14-page landscape `lec07.pdf` whose page 14 is the unique "a^n b^n is not regular" proof. Retrieval tests assert that query as top-1 with citation `slide 14`.

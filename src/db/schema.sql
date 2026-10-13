@@ -135,4 +135,6 @@ CREATE TABLE IF NOT EXISTS packs(
 CREATE TABLE IF NOT EXISTS schema_version(v INTEGER);
 
 -- @optional sqlite-vec
+-- rowid is chunks.id. Bind rowid as BigInt (better-sqlite3 numbers are
+-- rejected by sqlite-vec as primary keys).
 CREATE VIRTUAL TABLE IF NOT EXISTS chunks_vec USING vec0(embedding float[384]);

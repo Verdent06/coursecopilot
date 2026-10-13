@@ -1,0 +1,247 @@
+import type { SourceKind } from "../db/repo.js";
+import { MIME_PDF, MIME_PPTX } from "../ingest/mime.js";
+import type { Locator } from "../ingest/types.js";
+
+export type CitationKind = "pdf" | "pptx" | "web" | "canvas" | "youtube" | "transcript" | "file";
+
+export type Citation = {
+  label: string;
+  kind: CitationKind;
+  url: string;
+  title: string;
+  page: number | null;
+  slide: number | null;
+  anchor: string | null;
+  start_s: number | null;
+  end_s: number | null;
+  source_id: string;
+  document_id: string;
+  chunk_id: number;
+};
+
+export type CitationInput = {
+  chunk_id: number;
+  document_id: string;
+  source_id: string;
+  source_kind: SourceKind;
+  mime: string | null;
+  doc_title: string | null;
+  doc_url: string | null;
+  course_title: string | null;
+  heading_path: string | null;
+  locator: Locator;
+  meta?: Record<string, unknown>;
+};
+
+export function parseLocator(raw: string): Locator {
+  try {
+    const parsed = JSON.parse(raw) as Locator;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function parseMeta(raw: string | null): Record<string, unknown> {
+  if (!raw) {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** True when a PDF should be cited as slides (pack flag, extractor heuristic, or locator.slide). */
+export function isSlideDeckPdf(input: {
+  mime?: string | null;
+  locator: Locator;
+  meta?: Record<string, unknown>;
+}): boolean {
+  if (input.locator.slide != null) {
+    return true;
+  }
+  if (input.meta?.as_slides === true) {
+    return true;
+  }
+  return false;
+}
+
+export function citationKind(input: CitationInput): CitationKind {
+  if (input.source_kind === "website") {
+    return "web";
+  }
+  if (input.source_kind === "canvas") {
+    return "canvas";
+  }
+  if (input.source_kind === "youtube") {
+    return "youtube";
+  }
+  if (input.source_kind === "transcript") {
+    return "transcript";
+  }
+  if (input.mime === MIME_PDF || input.locator.page != null) {
+    return "pdf";
+  }
+  if (input.mime === MIME_PPTX || input.locator.slide != null) {
+    return "pptx";
+  }
+  return "file";
+}
+
+export function buildCitation(input: CitationInput): Citation {
+  const loc = input.locator;
+  const kind = citationKind(input);
+  const title =
+    loc.title || input.doc_title || filenameFromUri(loc.path || loc.url || input.doc_url);
+  const slides =
+    kind === "pptx" || isSlideDeckPdf({ mime: input.mime, locator: loc, meta: input.meta });
+  const page = loc.page ?? null;
+  const slide = loc.slide ?? (slides && page != null ? page : null);
+  const url = citationUrl({ kind, loc, docUrl: input.doc_url, page, slide, slides });
+  const where = locationLabel({ kind, loc, headingPath: input.heading_path, page, slide, slides });
+  const label = buildLabel(input.course_title, title, where, kind, loc);
+  return {
+    label,
+    kind,
+    url,
+    title,
+    page,
+    slide,
+    anchor: loc.anchor ?? null,
+    start_s: loc.start_s ?? null,
+    end_s: loc.end_s ?? null,
+    source_id: input.source_id,
+    document_id: input.document_id,
+    chunk_id: input.chunk_id,
+  };
+}
+
+function buildLabel(
+  courseTitle: string | null,
+  title: string,
+  where: string | null,
+  kind: CitationKind,
+  loc: Locator,
+): string {
+  if (kind === "canvas") {
+    const module = typeof loc.title === "string" ? loc.title : title;
+    const item = title;
+    const inner = ["Canvas", module, item].filter(Boolean).join(" · ");
+    return `[${inner}]`;
+  }
+  const parts = [courseTitle, title, where].filter((p): p is string => Boolean(p?.trim()));
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const part of parts) {
+    const key = part.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    unique.push(part);
+  }
+  return `[${unique.join(" · ")}]`;
+}
+
+function locationLabel(input: {
+  kind: CitationKind;
+  loc: Locator;
+  headingPath: string | null;
+  page: number | null;
+  slide: number | null;
+  slides: boolean;
+}): string | null {
+  if (input.kind === "youtube" || input.kind === "transcript") {
+    if (input.loc.start_s != null) {
+      return formatTimestamp(input.loc.start_s);
+    }
+    return null;
+  }
+  if (input.slide != null && (input.kind === "pptx" || input.slides || input.kind === "pdf")) {
+    return `slide ${input.slide}`;
+  }
+  if (input.page != null) {
+    return `p. ${input.page}`;
+  }
+  if (input.kind === "web") {
+    const heading = lastHeading(input.headingPath);
+    return heading || (input.loc.anchor ? `#${input.loc.anchor}` : null);
+  }
+  return null;
+}
+
+function citationUrl(input: {
+  kind: CitationKind;
+  loc: Locator;
+  docUrl: string | null;
+  page: number | null;
+  slide: number | null;
+  slides: boolean;
+}): string {
+  const base = input.loc.url || input.docUrl || input.loc.path || "";
+  if (input.kind === "youtube") {
+    const id = youtubeIdFromUrl(base);
+    const t = input.loc.start_s != null ? Math.floor(input.loc.start_s) : null;
+    if (id) {
+      return t != null ? `https://youtu.be/${id}?t=${t}s` : `https://youtu.be/${id}`;
+    }
+    if (t != null && base) {
+      const join = base.includes("?") ? "&" : "?";
+      return `${stripHash(base)}${join}t=${t}s`;
+    }
+    return base;
+  }
+  if ((input.kind === "pdf" || input.slides) && input.page != null && base) {
+    return `${stripHash(base)}#page=${input.page}`;
+  }
+  if (input.kind === "web" && input.loc.anchor && base) {
+    return `${stripHash(base)}#${input.loc.anchor}`;
+  }
+  return base;
+}
+
+function lastHeading(path: string | null): string | null {
+  if (!path) {
+    return null;
+  }
+  const parts = path
+    .split(">")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return parts[parts.length - 1] ?? null;
+}
+
+function filenameFromUri(uri: string | null | undefined): string {
+  if (!uri) {
+    return "document";
+  }
+  try {
+    const path = uri.replace(/^file:\/\//, "").split("?")[0] ?? uri;
+    const name = path.split("/").filter(Boolean).pop() ?? path;
+    return decodeURIComponent(name);
+  } catch {
+    return uri;
+  }
+}
+
+function stripHash(url: string): string {
+  const i = url.indexOf("#");
+  return i >= 0 ? url.slice(0, i) : url;
+}
+
+function formatTimestamp(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2, "0")}`;
+}
+
+function youtubeIdFromUrl(url: string): string | null {
+  const m = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/.exec(
+    url,
+  );
+  return m?.[1] ?? null;
+}

@@ -54,7 +54,7 @@ describe("MCP stdio e2e", () => {
   async function waitForJob(
     client: Client,
     jobId: string,
-    timeoutMs = 30_000,
+    timeoutMs = 180_000,
   ): Promise<Record<string, unknown>> {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
@@ -80,11 +80,14 @@ describe("MCP stdio e2e", () => {
     expect(names).toEqual([
       "add_course",
       "add_source",
+      "get_chunk",
+      "get_document",
       "get_ingest_status",
       "list_courses",
       "list_sources",
       "ping",
       "remove_source",
+      "search_course",
       "set_exam",
     ]);
     // Keep this log: captured for the PR description as protocol proof.
@@ -214,6 +217,50 @@ describe("MCP stdio e2e", () => {
       db.close();
     }
 
+    const search = await client.callTool({
+      name: "search_course",
+      arguments: {
+        course_id: "eecs376-f26",
+        query: "pumping lemma proof that a^n b^n is not regular",
+        k: 5,
+      },
+    });
+    expect(search.isError).toBeFalsy();
+    const searchBody = search.structuredContent as {
+      results: Array<{
+        chunk_id: number;
+        text: string;
+        score: number;
+        citation: { page: number | null; slide: number | null; label: string; url: string };
+      }>;
+      degraded?: string;
+    };
+    expect(searchBody.results.length).toBeGreaterThan(0);
+    const top = searchBody.results[0];
+    expect(top?.citation.page).toBe(14);
+    expect(top?.citation.slide).toBe(14);
+    expect(top?.citation.label).toMatch(/slide 14/i);
+    console.log("e2e search_course", JSON.stringify(searchBody, null, 2));
+
+    const gotChunk = await client.callTool({
+      name: "get_chunk",
+      arguments: { chunk_id: top?.chunk_id, context: 1 },
+    });
+    expect(gotChunk.isError).toBeFalsy();
+    const structured = gotChunk.structuredContent as {
+      chunk: { document_id: string };
+      citation: { label: string };
+    };
+    expect(structured.citation.label).toMatch(/slide 14/i);
+
+    const gotDoc = await client.callTool({
+      name: "get_document",
+      arguments: { document_id: structured.chunk.document_id },
+    });
+    expect(gotDoc.isError).toBeFalsy();
+    const docBody = gotDoc.structuredContent as { text: string; chunks: unknown[] };
+    expect(docBody.text).toMatch(/a\^n b\^n is not regular/i);
+
     const removed = await client.callTool({
       name: "remove_source",
       arguments: { source_id: queuedBody.source_id },
@@ -222,5 +269,5 @@ describe("MCP stdio e2e", () => {
     expect(
       (removed.structuredContent as { removed_chunks: number }).removed_chunks,
     ).toBeGreaterThan(0);
-  }, 60_000);
+  }, 180_000);
 });

@@ -1,13 +1,16 @@
 import { type CourseRepo, RepoError } from "../db/repo.js";
+import { EMBED_BATCH } from "../retrieve/config.js";
 import { newId } from "../util/ids.js";
 import { log } from "../util/log.js";
 import { nowIso } from "../util/time.js";
+import type { Embedder } from "./embed.js";
 import { ingestFileSource } from "./sources/file.js";
 import type { IngestResult, SkipReason } from "./types.js";
 
 export type IngestQueueOptions = {
   repo: CourseRepo;
   allowLocalPaths?: boolean;
+  embedder?: Embedder | null;
 };
 
 const UNIMPLEMENTED: Record<string, string> = {
@@ -24,9 +27,11 @@ const UNIMPLEMENTED: Record<string, string> = {
 export class IngestQueue {
   private tail: Promise<void> = Promise.resolve();
   private readonly allowLocalPaths: boolean;
+  private readonly embedder: Embedder | null;
 
   constructor(private readonly opts: IngestQueueOptions) {
     this.allowLocalPaths = opts.allowLocalPaths ?? true;
+    this.embedder = opts.embedder ?? null;
   }
 
   /** Validate kind and persist a queued job, then schedule it. */
@@ -96,6 +101,11 @@ export class IngestQueue {
         job.source_id,
         persistProgress,
       );
+      try {
+        await this.embedSource(job.source_id, persistProgress, result.skipped);
+      } catch (err) {
+        log.warn("embedding step failed; leaving FTS-only index", err);
+      }
       const state = finishState(result);
       const message = finishMessage(state, result);
       this.opts.repo.updateJob(jobId, {
@@ -124,6 +134,55 @@ export class IngestQueue {
         result_json: JSON.stringify({ docs: 0, chunks: 0, skipped: [] }),
       });
       this.opts.repo.updateSource(job.source_id, { status: "error", error: message });
+    }
+  }
+
+  private async embedSource(
+    sourceId: string,
+    persistProgress: (progress: number, message: string, skipped: SkipReason[]) => void,
+    skipped: SkipReason[],
+  ): Promise<void> {
+    const embedder = this.embedder;
+    if (!embedder || embedder.degraded) {
+      return;
+    }
+    const chunks = this.opts.repo.listChunksForSource(sourceId);
+    if (chunks.length === 0) {
+      return;
+    }
+    persistProgress(0.85, "downloading embedding model", skipped);
+    const ready = await embedder.ready();
+    if (!ready) {
+      persistProgress(0.95, "keyword index ready (embeddings unavailable)", skipped);
+      return;
+    }
+    persistProgress(0.9, `embedding ${chunks.length} chunk(s)`, skipped);
+    const vectors: Array<{ id: number; embedding: Float32Array; course_id: string }> = [];
+    for (let i = 0; i < chunks.length; i += EMBED_BATCH) {
+      const batch = chunks.slice(i, i + EMBED_BATCH);
+      const texts = batch.map((c) => c.text);
+      const embedded = await embedder.embed(texts);
+      if (!embedded) {
+        persistProgress(0.95, "keyword index ready (embeddings unavailable)", skipped);
+        return;
+      }
+      for (let j = 0; j < batch.length; j++) {
+        const chunk = batch[j];
+        const vec = embedded[j];
+        if (chunk && vec) {
+          vectors.push({ id: chunk.id, embedding: vec, course_id: chunk.course_id });
+        }
+      }
+      persistProgress(
+        0.9 + 0.08 * ((i + batch.length) / chunks.length),
+        `embedding ${Math.min(i + batch.length, chunks.length)}/${chunks.length} chunk(s)`,
+        skipped,
+      );
+    }
+    try {
+      this.opts.repo.insertEmbeddings(vectors);
+    } catch (err) {
+      log.warn("failed to store embeddings; FTS-only for this source", err);
     }
   }
 }
