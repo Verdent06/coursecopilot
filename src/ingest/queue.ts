@@ -117,18 +117,14 @@ export class IngestQueue {
     try {
       const result: IngestResult = await this.ingest(job.source_id, persistProgress);
       try {
-        await this.embedSource(
-          job.source_id,
-          persistProgress,
-          result.skipped,
-          result.newChunkIds,
-        );
+        await this.embedSource(job.source_id, persistProgress, result.skipped, result.newChunkIds);
       } catch (err) {
         log.warn("embedding step failed; leaving FTS-only index", err);
       }
       try {
         const source = this.opts.repo.getSource(job.source_id);
-        if (source) {
+        const unchangedIndex = result.newChunkIds !== undefined && result.newChunkIds.length === 0;
+        if (source && !unchangedIndex) {
           persistProgress(0.97, "extracting topics", result.skipped);
           await extractAndAssignTopics(this.opts.repo, source.course_id, this.embedder);
         }
