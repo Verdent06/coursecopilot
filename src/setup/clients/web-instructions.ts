@@ -23,7 +23,7 @@ export function webClientInstructions(opts: WebInstructionOpts = {}): string {
     : [
         "Web clients cannot be detected locally. They need a public HTTPS URL.",
         "Run `npx coursecopilot setup --remote` (starts serve --http + a Cloudflare tunnel)",
-        "or `npx coursecopilot tunnel`, or a one-click deploy (Render / Fly).",
+        "or `npx coursecopilot tunnel`, or a one-click deploy (Render / Fly / Railway).",
         "Then paste the URL in each product:",
         "",
       ].join("\n");

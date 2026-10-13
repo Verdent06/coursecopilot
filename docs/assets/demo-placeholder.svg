@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="CourseCopilot demo video placeholder">
+  <rect width="960" height="540" fill="#0f172a"/>
+  <rect x="48" y="48" width="864" height="444" rx="16" fill="#1e293b" stroke="#334155"/>
+  <circle cx="480" cy="250" r="48" fill="#38bdf8"/>
+  <polygon points="468,224 468,276 512,250" fill="#0f172a"/>
+  <text x="480" y="340" text-anchor="middle" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="28">Demo video (M14)</text>
+  <text x="480" y="380" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16">setup ’ add-pack ’ quiz me on what I missed ’ slide citation</text>
+</svg>

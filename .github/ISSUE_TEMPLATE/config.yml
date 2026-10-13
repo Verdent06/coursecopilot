@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Course pack contributing guide
+    url: https://github.com/Verdent06/coursecopilot/blob/main/CONTRIBUTING-packs.md
+    about: How to add a links-only pack (no lecture content)
+  - name: Install / doctor
+    url: https://github.com/Verdent06/coursecopilot/blob/main/docs/install.md
+    about: Client setup, MCPB, Cursor deeplink, web connectors

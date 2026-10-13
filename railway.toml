@@ -1,0 +1,17 @@
+# https://docs.railway.com/guides/dockerfiles
+# Deploy button: https://railway.app/new?template=https://github.com/Verdent06/coursecopilot
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[variables]
+PORT = "8787"
+COURSECOPILOT_BIND = "0.0.0.0"
+COURSECOPILOT_HOME = "/data"
+HF_HOME = "/data/hf"

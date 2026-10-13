@@ -47,6 +47,18 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Cursor install link
+        run: npm run check:cursor-link
+
+      - name: npm pack dry-run
+        run: npm pack --dry-run
+
+      - name: Pack MCPB
+        run: npm run pack:mcpb
+
+      - name: Tools doc
+        run: npm run docs:tools:check
+
       - name: Test
         run: npx vitest run
         env:

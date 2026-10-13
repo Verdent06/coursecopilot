@@ -3,7 +3,7 @@
   "name": "coursecopilot",
   "display_name": "CourseCopilot",
   "version": "0.1.0",
-  "description": "Your classes inside the AI you already use. Read-only Canvas, course sites, and files — no API key.",
+  "description": "Your classes inside the AI you already use, free. Share a course in one line.",
   "author": {
     "name": "Vedant Desai",
     "url": "https://github.com/Verdent06/coursecopilot"
@@ -17,8 +17,8 @@
     "type": "node",
     "entry_point": "dist/cli.js",
     "mcp_config": {
-      "command": "node",
-      "args": ["${__dirname}/dist/cli.js"],
+      "command": "npx",
+      "args": ["-y", "coursecopilot@latest"],
       "env": {
         "CANVAS_BASE_URL": "${user_config.canvas_base_url}",
         "CANVAS_TOKEN": "${user_config.canvas_token}"
@@ -29,15 +29,21 @@
     "canvas_base_url": {
       "type": "string",
       "title": "Canvas base URL",
-      "description": "Your school’s Canvas host, e.g. https://umich.instructure.com. Any Canvas instance works.",
+      "description": "Your school's Canvas host, e.g. https://umich.instructure.com. Any Canvas instance works. Prefer `coursecopilot canvas connect` so the token is not stored in a client config.",
       "required": false
     },
     "canvas_token": {
       "type": "string",
       "title": "Canvas personal access token",
-      "description": "Create at Account → Settings → Approved Integrations → + New Access Token. Stored only in this client’s env for the local process — never in the CourseCopilot database, packs, or shared configs. Prefer `coursecopilot canvas connect` so the token lives in ~/.coursecopilot/secrets.json (0600).",
+      "description": "Create at Account → Settings → Approved Integrations → + New Access Token. Mapped to CANVAS_TOKEN for the local process only — never written to the CourseCopilot database, packs, or shared configs.",
       "sensitive": true,
       "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=20"
     }
   }
 }

@@ -12,3 +12,6 @@ coverage/
 !.env.example
 tmp/
 .vitest/
+*.tgz
+*.mcpb
+mcpb-stage/

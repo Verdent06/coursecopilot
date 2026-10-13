@@ -2,10 +2,19 @@
 
 Primary path: **`npx coursecopilot setup`**. It detects every local MCP client it can find, backs up each config, and merges `mcpServers.coursecopilot` without touching other servers.
 
+[![Install MCP Server in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=coursecopilot&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNvdXJzZWNvcGlsb3RAbGF0ZXN0Il19)
+
 ```bash
 npx coursecopilot setup
 npx coursecopilot add-pack harvard-cs50x
 npx coursecopilot doctor
+```
+
+One-liners if you skip setup:
+
+```bash
+claude mcp add -s user coursecopilot -- npx -y coursecopilot@latest
+gemini mcp add -s user coursecopilot npx -y coursecopilot@latest
 ```
 
 Then ask your AI: “quiz me on what I missed.”

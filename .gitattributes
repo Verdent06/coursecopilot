@@ -12,3 +12,5 @@
 *.node binary
 *.pdf binary
 *.pptx binary
+*.mcpb binary
+*.tgz binary

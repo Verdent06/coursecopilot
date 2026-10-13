@@ -42,14 +42,36 @@ export function geminiCliEntry(): StdioServerSpec {
 
 export type JsonStdioEntry = StdioServerSpec & { type?: "stdio" };
 
-export function claudeMcpAddArgs(): string[] {
-  const spec = stdioServerSpec();
+/** Spec §12 published stdio entry. Independent of COURSECOPILOT_SETUP_LOCAL. */
+export const PUBLISHED_STDIO_SPEC: StdioServerSpec = {
+  command: "npx",
+  args: ["-y", `${SERVER_NAME}@latest`],
+};
+
+export const CURSOR_INSTALL_BADGE_SRC = "https://cursor.com/deeplink/mcp-install-dark.svg";
+
+export function claudeMcpAddArgs(spec: StdioServerSpec = stdioServerSpec()): string[] {
   return ["mcp", "add", "-s", "user", SERVER_NAME, "--", spec.command, ...spec.args];
 }
 
-export function geminiMcpAddArgs(): string[] {
-  const spec = stdioServerSpec();
+export function geminiMcpAddArgs(spec: StdioServerSpec = stdioServerSpec()): string[] {
   return ["mcp", "add", "-s", "user", SERVER_NAME, spec.command, ...spec.args];
+}
+
+export function claudeCodeOneLiner(spec: StdioServerSpec = PUBLISHED_STDIO_SPEC): string {
+  return `claude ${claudeMcpAddArgs(spec).join(" ")}`;
+}
+
+export function geminiCliOneLiner(spec: StdioServerSpec = PUBLISHED_STDIO_SPEC): string {
+  return `gemini ${geminiMcpAddArgs(spec).join(" ")}`;
+}
+
+export function cursorConfigJson(spec: StdioServerSpec = PUBLISHED_STDIO_SPEC): string {
+  return JSON.stringify({ command: spec.command, args: spec.args });
+}
+
+export function cursorConfigBase64(spec: StdioServerSpec = PUBLISHED_STDIO_SPEC): string {
+  return Buffer.from(cursorConfigJson(spec), "utf8").toString("base64");
 }
 
 /**
@@ -57,11 +79,18 @@ export function geminiMcpAddArgs(): string[] {
  * https://cursor.com/docs/mcp/install-links
  */
 export function cursorDeeplink(spec: StdioServerSpec = stdioServerSpec()): string {
-  const config = Buffer.from(
-    JSON.stringify({ command: spec.command, args: spec.args }),
-    "utf8",
-  ).toString("base64");
+  const config = cursorConfigBase64(spec);
   return `cursor://anysphere.cursor-deeplink/mcp/install?name=${SERVER_NAME}&config=${encodeURIComponent(config)}`;
+}
+
+/** HTTPS install page (works as a README badge href; GitHub does not open cursor://). */
+export function cursorHttpsInstallUrl(spec: StdioServerSpec = PUBLISHED_STDIO_SPEC): string {
+  const config = cursorConfigBase64(spec);
+  return `https://cursor.com/en/install-mcp?name=${SERVER_NAME}&config=${encodeURIComponent(config)}`;
+}
+
+export function cursorInstallBadgeMarkdown(spec: StdioServerSpec = PUBLISHED_STDIO_SPEC): string {
+  return `[![Install MCP Server in Cursor](${CURSOR_INSTALL_BADGE_SRC})](${cursorHttpsInstallUrl(spec)})`;
 }
 
 export function decodeCursorDeeplink(url: string): { name: string; config: StdioServerSpec } {

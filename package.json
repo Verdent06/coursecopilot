@@ -1,7 +1,7 @@
 {
   "name": "coursecopilot",
   "version": "0.1.0",
-  "description": "NotebookLM for your actual classes, open source, inside the AI you already use.",
+  "description": "Your classes inside the AI you already use, free. Share a course in one line.",
   "license": "MIT",
   "author": "Vedant Desai",
   "homepage": "https://github.com/Verdent06/coursecopilot#readme",
@@ -19,7 +19,14 @@
     "course",
     "claude",
     "chatgpt",
-    "cursor"
+    "cursor",
+    "gemini",
+    "canvas",
+    "youtube",
+    "lecture",
+    "quiz",
+    "study",
+    "local-first"
   ],
   "type": "module",
   "engines": {
@@ -31,10 +38,17 @@
   },
   "files": [
     "dist",
+    "!dist/**/*.map",
+    "!dist/**/*.d.ts",
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
+    "prepack": "npm run build",
     "build": "tsc && node scripts/copy-sql.mjs",
     "start": "node dist/cli.js",
     "dev": "tsx src/cli.ts",
@@ -43,6 +57,12 @@
     "lint:fix": "biome check --write .",
     "test": "vitest run",
     "check:no-llm": "node scripts/check-no-llm-sdks.mjs",
+    "check:cursor-link": "tsx scripts/make-cursor-link.ts --check",
+    "pack:dry-run": "npm pack --dry-run",
+    "pack:mcpb": "tsx scripts/pack-mcpb.ts",
+    "make-cursor-link": "tsx scripts/make-cursor-link.ts",
+    "docs:tools": "tsx scripts/gen-tools-doc.ts",
+    "docs:tools:check": "tsx scripts/gen-tools-doc.ts --check",
     "packs:index": "tsx scripts/generate-pack-index.ts",
     "packs:validate": "tsx scripts/validate-packs.ts",
     "packs:check-urls": "tsx scripts/check-pack-urls.ts"
@@ -68,6 +88,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
     "@biomejs/biome": "^2.2.5",
     "@modelcontextprotocol/client": "^2.3.1",
     "@types/better-sqlite3": "^7.6.13",
