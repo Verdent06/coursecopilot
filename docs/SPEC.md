@@ -869,3 +869,18 @@ Chosen while implementing the website crawler.
 6. **Exam dates are suggested only.** Calendar/schedule tables are kept as Markdown. Regex hits for Midterm/Exam/Final near a date appear in the job message; `set_exam` is never called automatically.
 7. **DOCX links are skipped.** Spec §9.1 mentions DOCX; M2 did not add a DOCX extractor. Linked `.docx` is reported as unsupported. PDF and PPTX are the M4 file hops.
 8. **Fetch is global `fetch` (Node's undici).** No extra `undici` dependency. User-Agent is `CourseCopilot/<version> (+https://github.com/Verdent06/coursecopilot)`. 429/503 retry up to 3 times with exponential backoff.
+
+---
+
+## 29. Spec amendments (leccap / lecture capture)
+
+Chosen while implementing UMich CAEN Lecture Capture as a generic lecture-capture adapter.
+
+1. **Source kind `leccap`.** `sources.kind` CHECK and `schema_version` bump to **3**. Existing DBs rebuild `sources` (foreign keys off) so `'leccap'` is allowed. Citation `kind` is the generic `"lecture"` so Panopto/Kaltura can share labels/deep links later.
+2. **Auth.** `coursecopilot login leccap` opens a headed Playwright window with a persistent profile under `~/.coursecopilot/browser-profiles/leccap`. The user completes Shibboleth/Okta+Duo themselves. Cookies are saved to `~/.coursecopilot/leccap-session.json` (0600). `--cookies <file>` imports Playwright storageState or Netscape cookies.txt. **Passwords are never stored.** Playwright and tesseract.js are *not* package dependencies; they load lazily (optional `~/.coursecopilot/tools` install).
+3. **Ingest.** Site URL lists recordings (`/leccap/viewer/api/recordings/?sk=` then HTML `.play-link` fallback). Per recording: `/leccap/player/api/product/?rk=` captions `{text,intime,outtime}` (else `/player/api/webvtt/`); `info.thumbnails` `[slideIndex, seconds]` as the slide-change timeline; slide JPEGs from `mediaPrefix+sitekey+slides_folder`. Whiteboard `aux_sources` are metadata-only unless `options.whiteboard: true`. No MP4 download.
+4. **Citations.** `[EECS 376 – Lecture 10/12 @ 23:14, slide 12]`. Player deep link uses `#t=<seconds>` (HTML Media Fragments). Live player JS is behind login, so whether CAEN honors the hash is **[UNVERIFIED]**; Cloudflare's challenge preserves `location.hash`. OCR text is matched to already-ingested PDF/PPTX pages (recall of OCR tokens against the page, min score 0.45 and at least 4 tokens); a hit adds `(lec10.pdf p. 12)` to the label.
+5. **Incremental.** Re-`add_source` on the same canonical site/player URL re-queues the existing source. Recordings whose `content_hash` (captions + thumbnails + title/date) matches are skipped as `unchanged` (no re-embed). Rate limit ≥500 ms between API calls, with retries on 429/5xx.
+6. **Fixtures.** Synthetic JSON under `test/fixtures/leccap/` (documented product shape; no real student data, no live session cookies).
+7. **Exception to §2 SSO-out-of-scope.** Lecture capture is the one source that needs a browser login. The user signs in themselves; CourseCopilot only reuses the session cookies. Passwords are never stored. This does not open Piazza/Gradescope scraping.
+

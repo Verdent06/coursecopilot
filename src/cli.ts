@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { runLoginCommand } from "./cli/login.js";
 import { generateRemoteSecrets } from "./remote/auth.js";
 import { startQuickTunnel } from "./remote/tunnel.js";
 import { formatConnectorHelp, startHttpServer } from "./server/transport-http.js";
@@ -126,4 +127,18 @@ program
     process.on("SIGTERM", () => void shutdown());
   });
 
-program.parse();
+program
+  .command("login")
+  .description(
+    "Sign in to a lecture-capture provider in a real browser. Passwords are never stored.",
+  )
+  .argument("<provider>", "Provider id (currently: leccap)")
+  .option(
+    "--cookies <file>",
+    "Import cookies from a Netscape cookies.txt or Playwright storageState JSON instead of opening a browser",
+  )
+  .action(async (provider: string, opts: { cookies?: string }) => {
+    await runLoginCommand(provider, opts);
+  });
+
+await program.parseAsync(process.argv);

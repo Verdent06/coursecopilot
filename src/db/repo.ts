@@ -32,7 +32,14 @@ export type SetExamInput = {
   weight?: number;
 };
 
-export type SourceKind = "website" | "canvas" | "file" | "folder" | "youtube" | "transcript";
+export type SourceKind =
+  | "website"
+  | "canvas"
+  | "file"
+  | "folder"
+  | "youtube"
+  | "transcript"
+  | "leccap";
 export type SourceStatus = "queued" | "running" | "done" | "error" | "partial";
 export type JobState = "queued" | "running" | "done" | "error" | "partial";
 
@@ -131,6 +138,14 @@ export type MasteryRow = {
 };
 
 export type DocumentListItem = DocumentRow & { chunk_count: number };
+
+export type SourceDocumentRow = {
+  id: string;
+  url: string | null;
+  title: string | null;
+  content_hash: string | null;
+  meta_json: string | null;
+};
 
 export type CourseInfo = {
   course_id: string;
@@ -314,6 +329,16 @@ export class CourseRepo {
          FROM sources WHERE id = ?`,
       )
       .get(id) as SourceRow | undefined;
+  }
+
+  findSourceByUri(courseId: string, kind: SourceKind, uri: string): SourceRow | undefined {
+    return this.db
+      .prepare(
+        `SELECT id, course_id, kind, uri, title, config_json, status, error, last_synced_at
+         FROM sources WHERE course_id = ? AND kind = ? AND uri = ?
+         ORDER BY id ASC LIMIT 1`,
+      )
+      .get(courseId, kind, uri) as SourceRow | undefined;
   }
 
   updateSource(
@@ -627,6 +652,16 @@ export class CourseRepo {
          FROM documents WHERE source_id = ? AND url = ?`,
       )
       .get(sourceId, url) as DocumentRecord | undefined;
+  }
+
+  listSourceDocuments(sourceId: string): SourceDocumentRow[] {
+    return this.db
+      .prepare(
+        `SELECT id, url, title, content_hash, meta_json
+         FROM documents WHERE source_id = ?
+         ORDER BY id ASC`,
+      )
+      .all(sourceId) as SourceDocumentRow[];
   }
 
   touchDocument(id: string, extraMeta?: Record<string, unknown>): void {

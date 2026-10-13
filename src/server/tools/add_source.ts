@@ -2,6 +2,7 @@ import { statSync } from "node:fs";
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
 import { type CourseRepo, RepoError, type SourceKind } from "../../db/repo.js";
+import { parseLeccapUrl } from "../../ingest/providers/leccap/parse.js";
 import type { IngestQueue } from "../../ingest/queue.js";
 import { parseYoutubeUrl } from "../../ingest/youtube/parse.js";
 import { assertExists, resolveLocalPath } from "../../util/files.js";
@@ -14,18 +15,21 @@ const KIND_MILESTONE: Record<string, string> = {
 };
 
 /**
- * Enqueue a source for ingestion. Website, file, folder, youtube, and transcript
- * kinds are implemented. Returns a job_id immediately so the host can poll get_ingest_status.
+ * Enqueue a source for ingestion. Website, file, folder, youtube, transcript,
+ * and leccap kinds are implemented. Returns a job_id immediately so the host can
+ * poll get_ingest_status.
  */
 export const addSourceInputSchema = z.object({
   course_id: z.string().describe("Course slug returned by add_course"),
   kind: z
-    .enum(["website", "file", "folder", "youtube", "transcript", "canvas"])
-    .describe("Source type. website, file, folder, youtube, and transcript are implemented."),
+    .enum(["website", "file", "folder", "youtube", "transcript", "canvas", "leccap"])
+    .describe(
+      "Source type. website, file, folder, youtube, transcript, and leccap are implemented.",
+    ),
   uri: z
     .string()
     .describe(
-      "Public course website URL, YouTube watch/playlist URL, transcript .vtt/.srt path or URL, canvas://course/<id>, or an absolute filesystem path / file:// URI for file and folder",
+      "Public course website URL, YouTube watch/playlist URL, transcript .vtt/.srt path or URL, leccap site/player URL, canvas://course/<id>, or an absolute filesystem path / file:// URI for file and folder",
     ),
   options: z
     .object({
@@ -37,6 +41,14 @@ export const addSourceInputSchema = z.object({
         .boolean()
         .optional()
         .describe("Treat PDF pages as slides so citations use 'slide N' instead of 'p. N'"),
+      ocr: z
+        .boolean()
+        .optional()
+        .describe("OCR slide images for leccap (default true if tesseract.js is installed)"),
+      whiteboard: z
+        .boolean()
+        .optional()
+        .describe("Include whiteboard aux_source images for leccap (default: metadata only)"),
     })
     .optional(),
 });
@@ -60,7 +72,7 @@ export function registerAddSource(
     {
       title: "Add source",
       description:
-        "Enqueue a course source for ingestion. website crawls a public course site (robots, same-site scope, linked PDFs/PPTX). File/folder index local PDF, PPTX, Markdown, and TXT. youtube fetches captions (timestamps + youtu.be deep links). transcript indexes a local or remote VTT/SRT. Returns a job_id; poll get_ingest_status.",
+        "Enqueue a course source for ingestion. website crawls a public course site (robots, same-site scope, linked PDFs/PPTX). File/folder index local PDF, PPTX, Markdown, and TXT. youtube fetches captions (timestamps + youtu.be deep links). transcript indexes a local or remote VTT/SRT. leccap indexes UMich CAEN Lecture Capture (sign in first with `coursecopilot login leccap`). Returns a job_id; poll get_ingest_status.",
       inputSchema: addSourceInputSchema,
       outputSchema: addSourceOutputSchema,
       annotations: {
@@ -131,15 +143,29 @@ export function registerAddSource(
             }
           }
         }
+        let sourceUri = uri;
+        if (kind === "leccap") {
+          const parsed = parseLeccapUrl(uri);
+          if (!parsed) {
+            throw new RepoError(
+              `Not a CAEN Lecture Capture URL: "${uri}". Paste a site link (https://leccap.engin.umich.edu/leccap/site/...) or a player link (.../leccap/player/r/...). Sign in first: npx coursecopilot login leccap`,
+            );
+          }
+          sourceUri = parsed.canonical;
+        }
         repo.requireCourse(course_id);
-        const source = repo.insertSource({
-          id: newId(),
-          course_id,
-          kind: kind as SourceKind,
-          uri,
-          config_json: options ? JSON.stringify(options) : null,
-          status: "queued",
-        });
+        const existing =
+          kind === "leccap" ? repo.findSourceByUri(course_id, "leccap", sourceUri) : undefined;
+        const source = existing
+          ? existing
+          : repo.insertSource({
+              id: newId(),
+              course_id,
+              kind: kind as SourceKind,
+              uri: sourceUri,
+              config_json: options ? JSON.stringify(options) : null,
+              status: "queued",
+            });
         const jobId = queue.submit(source.id);
         return ok(
           { source_id: source.id, job_id: jobId, status: "queued" as const },

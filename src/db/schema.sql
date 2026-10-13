@@ -1,4 +1,4 @@
--- CourseCopilot SQLite schema (M2).
+-- CourseCopilot SQLite schema (v3: leccap source kind).
 -- Applied by src/db/migrate.ts. Optional sqlite-vec DDL is split at the marker below.
 
 CREATE TABLE IF NOT EXISTS courses(
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS courses(
 CREATE TABLE IF NOT EXISTS sources(
   id TEXT PRIMARY KEY,
   course_id TEXT REFERENCES courses(id) ON DELETE CASCADE,
-  kind TEXT CHECK(kind IN ('website','canvas','file','folder','youtube','transcript')),
+  kind TEXT CHECK(kind IN ('website','canvas','file','folder','youtube','transcript','leccap')),
   uri TEXT NOT NULL,
   title TEXT,
   config_json TEXT,

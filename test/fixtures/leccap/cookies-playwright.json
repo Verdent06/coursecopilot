@@ -1,0 +1,19 @@
+{
+  "cookies": [
+    {
+      "name": "cosign-leccap.engin",
+      "value": "test-session-not-real",
+      "domain": "leccap.engin.umich.edu",
+      "path": "/",
+      "httpOnly": true,
+      "secure": true
+    },
+    {
+      "name": "_shibsession_test",
+      "value": "synthetic",
+      "domain": ".umich.edu",
+      "path": "/"
+    }
+  ],
+  "origins": []
+}

@@ -6,7 +6,7 @@ import Database from "better-sqlite3";
 import { log } from "../util/log.js";
 import { getDbPath } from "../util/paths.js";
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 const SCHEMA_PATH = join(dirname(fileURLToPath(import.meta.url)), "schema.sql");
 const nodeRequire = createRequire(import.meta.url);
 
@@ -44,6 +44,7 @@ export function migrate(db: Database.Database, vecEnabled: boolean): boolean {
   db.exec(required);
   const vecHasCourseId = vecEnabled ? ensureChunksVec(db) : false;
   migrateToV2(db);
+  migrateToV3(db);
   const current = db.prepare("SELECT MAX(v) AS v FROM schema_version").get() as {
     v: number | null;
   };
@@ -120,6 +121,41 @@ function rebuildTopicsOrigin(db: Database.Database): void {
     INSERT INTO topics_new(id, course_id, name, origin) SELECT id, course_id, name, origin FROM topics;
     DROP TABLE topics;
     ALTER TABLE topics_new RENAME TO topics;
+    PRAGMA foreign_keys = ON;
+  `);
+}
+
+/**
+ * v3: allow sources.kind = 'leccap'. Fresh installs already have this CHECK
+ * from schema.sql; existing files keep the old CHECK under IF NOT EXISTS.
+ */
+export function migrateToV3(db: Database.Database): void {
+  const sourcesSql = db.prepare("SELECT sql FROM sqlite_master WHERE name = 'sources'").get() as
+    | { sql: string }
+    | undefined;
+  if (sourcesSql?.sql && !sourcesSql.sql.includes("'leccap'")) {
+    rebuildSourcesKind(db);
+  }
+}
+
+function rebuildSourcesKind(db: Database.Database): void {
+  db.exec(`
+    PRAGMA foreign_keys = OFF;
+    CREATE TABLE sources_new(
+      id TEXT PRIMARY KEY,
+      course_id TEXT REFERENCES courses(id) ON DELETE CASCADE,
+      kind TEXT CHECK(kind IN ('website','canvas','file','folder','youtube','transcript','leccap')),
+      uri TEXT NOT NULL,
+      title TEXT,
+      config_json TEXT,
+      status TEXT CHECK(status IN ('queued','running','done','error','partial')),
+      error TEXT,
+      last_synced_at TEXT
+    );
+    INSERT INTO sources_new(id, course_id, kind, uri, title, config_json, status, error, last_synced_at)
+      SELECT id, course_id, kind, uri, title, config_json, status, error, last_synced_at FROM sources;
+    DROP TABLE sources;
+    ALTER TABLE sources_new RENAME TO sources;
     PRAGMA foreign_keys = ON;
   `);
 }

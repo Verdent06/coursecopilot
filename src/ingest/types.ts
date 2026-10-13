@@ -9,6 +9,10 @@ export type Locator = {
   start_s?: number;
   end_s?: number;
   video_id?: string;
+  /** Lecture-capture recording id (leccap rk, later Panopto/Kaltura ids). */
+  recording_id?: string;
+  /** Matched course PDF/PPTX filename when OCR text aligned with an ingested slide. */
+  pdf_title?: string;
 };
 
 export type ExtractedSegment = {

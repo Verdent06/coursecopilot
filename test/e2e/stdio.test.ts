@@ -554,4 +554,37 @@ describe("MCP stdio e2e", () => {
       await server.close();
     }
   }, 180_000);
+
+  it("add_source(leccap) validates URLs and errors with login instructions when unsigned", async () => {
+    const { client } = await connect();
+    await client.callTool({
+      name: "add_course",
+      arguments: { title: "EECS 376", course_id: "eecs376-f26" },
+    });
+
+    const bad = await client.callTool({
+      name: "add_source",
+      arguments: {
+        course_id: "eecs376-f26",
+        kind: "leccap",
+        uri: "https://example.com/not-leccap",
+      },
+    });
+    expect(bad.isError).toBe(true);
+    expect(JSON.stringify(bad.content)).toMatch(/Lecture Capture|leccap/i);
+
+    const queued = await client.callTool({
+      name: "add_source",
+      arguments: {
+        course_id: "eecs376-f26",
+        kind: "leccap",
+        uri: "https://leccap.engin.umich.edu/leccap/site/testsitexxx",
+      },
+    });
+    expect(queued.isError).toBeFalsy();
+    const jobId = (queued.structuredContent as { job_id: string }).job_id;
+    const job = await waitForJob(client, jobId);
+    expect(job.state).toBe("error");
+    expect(String(job.message)).toMatch(/login leccap/i);
+  }, 180_000);
 });

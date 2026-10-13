@@ -5,7 +5,9 @@ import { log } from "../util/log.js";
 import { nowIso } from "../util/time.js";
 import type { FetchLike } from "./crawl/fetch.js";
 import type { Embedder } from "./embed.js";
+import type { LeccapClient } from "./providers/leccap/client.js";
 import { ingestFileSource } from "./sources/file.js";
+import { ingestLeccapSource } from "./sources/leccap.js";
 import { ingestTranscriptSource } from "./sources/transcript.js";
 import { ingestWebsiteSource } from "./sources/website.js";
 import { ingestYoutubeSource } from "./sources/youtube.js";
@@ -21,6 +23,7 @@ export type IngestQueueOptions = {
   allowPrivateNetwork?: boolean;
   crawlDelayMs?: number;
   fetchFn?: FetchLike;
+  leccap?: LeccapClient;
 };
 
 const UNIMPLEMENTED: Record<string, string> = {
@@ -62,7 +65,8 @@ export class IngestQueue {
       source.kind !== "folder" &&
       source.kind !== "website" &&
       source.kind !== "youtube" &&
-      source.kind !== "transcript"
+      source.kind !== "transcript" &&
+      source.kind !== "leccap"
     ) {
       throw new RepoError(`Unsupported source kind "${source.kind}"`);
     }
@@ -201,6 +205,13 @@ export class IngestQueue {
     if (source.kind === "transcript") {
       return ingestTranscriptSource(
         { repo: this.opts.repo, allowLocalPaths: this.allowLocalPaths },
+        sourceId,
+        persistProgress,
+      );
+    }
+    if (source.kind === "leccap") {
+      return ingestLeccapSource(
+        { repo: this.opts.repo, client: this.opts.leccap, skipSession: Boolean(this.opts.leccap) },
         sourceId,
         persistProgress,
       );

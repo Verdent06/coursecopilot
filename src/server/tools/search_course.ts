@@ -20,7 +20,7 @@ export const searchCourseInputSchema = z.object({
     .optional()
     .describe(`Number of results (default ${DEFAULT_K}, max ${MAX_K})`),
   source_kinds: z
-    .array(z.enum(["website", "file", "folder", "youtube", "transcript", "canvas"]))
+    .array(z.enum(["website", "file", "folder", "youtube", "transcript", "canvas", "leccap"]))
     .optional()
     .describe("Restrict to these source kinds"),
   topic: z.string().optional().describe("Boost chunks whose heading or topic matches"),

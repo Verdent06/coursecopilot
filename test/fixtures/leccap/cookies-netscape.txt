@@ -1,0 +1,4 @@
+# Netscape HTTP Cookie File
+# This is a synthetic fixture. Do not use against a live site.
+leccap.engin.umich.edu	TRUE	/	TRUE	0	cosign-leccap.engin	test-session-not-real
+.umich.edu	TRUE	/	TRUE	0	_shibsession_test	synthetic

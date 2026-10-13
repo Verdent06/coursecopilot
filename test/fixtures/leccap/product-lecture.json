@@ -1,0 +1,64 @@
+{
+  "id": "prod-abc123",
+  "title": "Lecture",
+  "date": "10/12/2026",
+  "sitekey": "testsitexxx",
+  "sitename": "EECS 000 001 - Fall 2026",
+  "recordingkey": "abc123",
+  "description": "",
+  "statsURL": "",
+  "published": true,
+  "canManage": false,
+  "mediaPrefix": "//s3.amazonaws.com/leccap.engin.umich.edu/media/",
+  "info": {
+    "products": [
+      {
+        "name": "Video and Slides (720p max)",
+        "movie_exported_name": "1000000000-000-O-test-00",
+        "movie_type": "mp4",
+        "duration": 240.5,
+        "slides_folder": "1000000000-000-O-test-slides"
+      }
+    ],
+    "thumbnails_folder": "1000000000-000-O-test-thumbs",
+    "thumbnails": [
+      [1, 0],
+      [2, 30],
+      [3, 90],
+      [4, 180]
+    ],
+    "aux_sources": [{ "kind": "whiteboard", "prefix": "a1-", "interval_s": 4, "count": 12 }],
+    "captionStatus": "ready",
+    "captions": [
+      {
+        "text": "Welcome back. Today we prove that a to the n b to the n is not regular.",
+        "intime": 0,
+        "outtime": 12
+      },
+      {
+        "text": "Assume for contradiction that L is regular and let p be the pumping length.",
+        "intime": 12,
+        "outtime": 28
+      },
+      {
+        "text": "Choose s equals a to the p b to the p. The pumping lemma says s equals x y z.",
+        "intime": 28,
+        "outtime": 55
+      },
+      {
+        "text": "Pumping y, which lies entirely in the a's, yields a string that is not in L.",
+        "intime": 90,
+        "outtime": 140
+      },
+      {
+        "text": "Therefore L is not regular. Next week we start context-free languages.",
+        "intime": 180,
+        "outtime": 220
+      }
+    ],
+    "cid": "test-cid",
+    "words": 80,
+    "words_reviewed": false,
+    "showWhiteboard": true
+  }
+}

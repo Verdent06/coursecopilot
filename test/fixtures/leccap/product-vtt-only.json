@@ -1,0 +1,23 @@
+{
+  "id": "prod-def456",
+  "title": "Lecture",
+  "date": "10/14/2026",
+  "sitekey": "testsitexxx",
+  "sitename": "EECS 000 001 - Fall 2026",
+  "recordingkey": "def456",
+  "description": "",
+  "published": true,
+  "mediaPrefix": "//s3.amazonaws.com/leccap.engin.umich.edu/media/",
+  "info": {
+    "products": [
+      {
+        "name": "Video and Slides (720p max)",
+        "movie_exported_name": "1000000001-000-O-test-00",
+        "slides_folder": "1000000001-000-O-test-slides"
+      }
+    ],
+    "thumbnails": [[1, 0], [2, 60]],
+    "captionStatus": "ready",
+    "captions": []
+  }
+}

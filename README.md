@@ -4,7 +4,7 @@ Your classes, inside the AI you already use. Open-source MCP connector that turn
 
 No API key. The host AI does all generation; this server fetches, indexes, retrieves, and stores learning state.
 
-**Status:** M0–M5 (scaffold, database, files, hybrid search, website crawler, YouTube captions + VTT/SRT), **M8 (learning layer)**, and **M9 (remote / HTTP mode)** are implemented. Canvas and packs land in other milestones — see [docs/SPEC.md](docs/SPEC.md).
+**Status:** M0–M5 (scaffold, database, files, hybrid search, website crawler, YouTube captions + VTT/SRT), **M8 (learning layer)**, **M9 (remote / HTTP mode)**, and **UMich CAEN Lecture Capture (`leccap`)** are implemented. Canvas and packs land in other milestones — see [docs/SPEC.md](docs/SPEC.md).
 
 ## Requirements
 
@@ -58,12 +58,12 @@ ChatGPT support needs a plan with developer mode — check [OpenAI's page](https
 | `add_course` | Create a course |
 | `list_courses` | List courses, source/chunk counts, exams |
 | `set_exam` | Add or replace an exam date |
-| `add_source` | Enqueue a source. `website` (robots, same-site crawl, linked PDFs/PPTX), `file`/`folder` (PDF, PPTX, Markdown, TXT), `youtube` (captions with timestamps), `transcript` (VTT/SRT). Canvas lands later. |
+| `add_source` | Enqueue a source. `website` (robots, same-site crawl, linked PDFs/PPTX), `file`/`folder` (PDF, PPTX, Markdown, TXT), `youtube` (captions with timestamps), `transcript` (VTT/SRT), `leccap` (UMich CAEN Lecture Capture). Canvas lands later. |
 | `get_ingest_status` | Poll an ingest job (`docs`, `chunks`, `skipped`) |
 | `list_sources` | List sources on a course |
 | `sync_course` | Incremental re-fetch (unchanged documents skip re-embedding) |
 | `remove_source` | Delete a source and its chunks |
-| `search_course` | Hybrid keyword + vector search with citations (page, slide, or `youtu.be/ID?t=Ns`) |
+| `search_course` | Hybrid keyword + vector search with citations (page, slide, `youtu.be/ID?t=Ns`, or lecture `#t=`) |
 | `get_chunk` / `get_document` | Fetch a cited chunk (plus neighbors) or a full document |
 | `search` / `fetch` | ChatGPT-compatible aliases of search_course / get_chunk |
 | `get_course_outline` | Documents, lectures, topics |
@@ -80,6 +80,14 @@ Prompt: `quiz_me_on_misses` (plus `quiz_me`, `study_session`, `exam_prep`, `expl
 YouTube: `add_source` with `kind: "youtube"` and a watch, youtu.be, shorts, embed, or playlist URL. Captions are fetched (English manual, then English auto, then any language). If scraping fails, `yt-dlp` (if on PATH) and then an Internet Archive `youtube-<id>` VTT mirror are tried. Videos without captions are skipped with a pointer to export a VTT/SRT (or v1.1 Whisper). Playlists expand up to 50 videos.
 
 Transcripts: `kind: "transcript"` with a local `.vtt`/`.srt` path or an `http(s)` URL. Caption windows are ~60s, merged to ~350 tokens, and keep `start_s`/`end_s`.
+
+### UMich lecture recordings (under a minute)
+
+```bash
+npx coursecopilot login leccap
+```
+
+Sign in with your UMich account (Okta + Duo) in the browser that opens. Passwords are never stored. Then `add_source` with `kind: "leccap"` and the Canvas **Lecture Recordings** site URL (`/leccap/site/...`) or a player URL (`/leccap/player/r/...`). Citations look like `EECS 376 – Lecture 10/12 @ 23:14, slide 12` and deep-link to the player. Details: [docs/leccap.md](docs/leccap.md).
 
 ## Develop
 
