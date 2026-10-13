@@ -4,30 +4,41 @@ Your classes, inside the AI you already use. Open-source MCP connector that turn
 
 No API key. The host AI does all generation; this server fetches, indexes, retrieves, and stores learning state.
 
-**Status:** M0–M6 (scaffold, database, files, hybrid search, website crawler, YouTube captions + VTT/SRT, **Canvas read-only**), **M7 (course packs)**, **M8 (learning layer)**, **M9 (remote / HTTP mode)**, **M11 (in-repo pack registry + starter packs)**, and **UMich CAEN Lecture Capture (`leccap`)** are implemented. See [docs/SPEC.md](docs/SPEC.md).
+**Status:** M0–M11 (including **M10 setup + doctor** for every client) plus UMich CAEN Lecture Capture (`leccap`). See [docs/SPEC.md](docs/SPEC.md).
 
 ## Requirements
 
 - Node.js 20 or later
 
-## Run the MCP server (stdio)
+## Install
+
+```bash
+npx coursecopilot setup
+npx coursecopilot add-pack harvard-cs50x
+```
+
+Then ask Claude / Cursor / Gemini CLI: **quiz me on what I missed.**
+
+`setup` detects Claude Desktop, Claude Code, Cursor, and Gemini CLI, backs up each config, and merges `mcpServers.coursecopilot` without touching other servers. It prints exact paste URLs for **claude.ai**, **ChatGPT** (developer mode — plan-gated), and the **Gemini app** (Custom apps for Spark; personal US Google accounts, 18+ only).
+
+```bash
+npx coursecopilot setup --remote    # serve --http + Cloudflare tunnel; paste the URL
+npx coursecopilot doctor            # Node, native modules, DB, clients, Canvas, leccap, registry
+npx coursecopilot doctor --json
+npx coursecopilot setup --undo      # restore the last config backups
+```
+
+Manual JSON / MCPB / Cursor deeplink / click paths: **[docs/install.md](docs/install.md)**.
+
+### Run the MCP server yourself (stdio)
+
+With no arguments, `coursecopilot` speaks MCP over stdio (stdout is the protocol; logs go to stderr).
 
 ```bash
 npm install
 npm run build
 node dist/cli.js
-```
-
-With no arguments, `coursecopilot` speaks MCP over stdio (stdout is the protocol; logs go to stderr).
-
-```bash
-npm install -g .
-coursecopilot
-```
-
-Inspect tools locally:
-
-```bash
+# or: npm install -g . && coursecopilot
 npx @modelcontextprotocol/inspector node dist/cli.js
 ```
 

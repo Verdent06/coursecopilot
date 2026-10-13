@@ -934,3 +934,16 @@ Chosen while implementing read-only Canvas.
 12. **Planner copy.** “Canvas due dates can seed this later” is now “Canvas assignments named Midterm/Exam/Final are suggested after ingest, never auto-set.”
 13. **CLI default command.** `coursecopilot` with no args still starts stdio, but it is a hidden default `stdio` command so `canvas connect`, `add-pack`, and other short-lived subcommands do not also open the MCP stdio loop. `parseAsync` awaits those commands.
 14. **Packs.** `export-pack` continues to drop `kind: canvas` and `canvas://` URIs (M7). The token is never packed. Importers attach Canvas themselves via `canvas connect` + `add_source`. In-repo starter packs (M11) may list Canvas under `connect_yourself` only.
+
+---
+
+## 33. Spec amendments (M10)
+
+Chosen while implementing setup + doctor.
+
+1. **Client files.** Claude Desktop: macOS `~/Library/Application Support/Claude/claude_desktop_config.json`, Windows `%APPDATA%\Claude\…`, Linux `~/.config/Claude/…` (lowercase `claude/` is detected as an alias). Claude Code: user-scope `~/.claude.json` top-level `mcpServers` (`CLAUDE_CONFIG_DIR` supported); prefer `claude mcp add -s user …` then merge the file. Cursor: `~/.cursor/mcp.json` plus a `cursor://anysphere.cursor-deeplink/mcp/install` link. Gemini CLI: `~/.gemini/settings.json`; prefer `gemini mcp add -s user …`. `--client` writes even if the app is not detected.
+2. **Merge rules.** Existing files are copied to `<file>.bak-<ISO-stamp>` before write. Only `mcpServers.coursecopilot` is set. Other top-level keys and other servers stay. Invalid JSON or a non-object `mcpServers` refuses to write and prints a snippet. Idempotent when the entry already matches. `--undo` replays `$COURSECOPILOT_HOME/setup-undo.json` (created files are deleted; backups are copied back). Tokens never appear in client JSON.
+3. **MCPB.** Setup writes the npx stdio JSON entry. The `.mcpb`-compatible `server.mcp_config` matches repo-root `manifest.json` (`name: coursecopilot`). Packing the `.mcpb` zip stays M13; setup prints double-click / Settings → Extensions → Advanced → Install Extension instructions and the optional sensitive `user_config` fields.
+4. **`--remote`.** Starts the M9 HTTP server on loopback plus `coursecopilot tunnel`, then reprints web-client URLs with the public origin. `--dry-run --remote` only describes that. The process stays up until SIGINT when a tunnel is running.
+5. **Doctor.** Required failures (non-zero): Node older than 20, `better-sqlite3` missing, DB integrity, a *detected* client with no valid entry, a configured Canvas token that `/users/self` rejects, a corrupt leccap session file, a configured public URL that does not answer MCP `initialize`. Warnings (zero exit): sqlite-vec / onnx / MiniLM unavailable (FTS fallback), registry unreachable, embeddings disabled. Skips: Canvas / leccap / remote / undetected clients. `--json` prints `{ok, version, checks}` on stdout. `--offline` does not download MiniLM.
+6. **Tests.** Config merge is exercised for all 4 local clients × macOS/Windows/Linux path layouts in temp dirs. Doctor checks are mocked (Canvas fetch, registry, initialize, embedder). Live claude.ai / ChatGPT / Gemini Spark / fresh-machine GUI checks remain M12.
