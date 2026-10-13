@@ -1,6 +1,8 @@
 import type { SourceKind } from "../db/repo.js";
 import { MIME_PDF, MIME_PPTX } from "../ingest/mime.js";
 import type { Locator } from "../ingest/types.js";
+import { extractVideoId, youtuBeUrl } from "../ingest/youtube/parse.js";
+import { formatTimestamp } from "../util/timestamp.js";
 
 export type ChunkCitationRow = {
   id: number;
@@ -213,10 +215,10 @@ function citationUrl(input: {
 }): string {
   const base = input.loc.url || input.docUrl || input.loc.path || "";
   if (input.kind === "youtube") {
-    const id = youtubeIdFromUrl(base);
+    const id = input.loc.video_id || extractVideoId(base);
     const t = input.loc.start_s != null ? Math.floor(input.loc.start_s) : null;
     if (id) {
-      return t != null ? `https://youtu.be/${id}?t=${t}s` : `https://youtu.be/${id}`;
+      return youtuBeUrl(id, t);
     }
     if (t != null && base) {
       const join = base.includes("?") ? "&" : "?";
@@ -260,18 +262,4 @@ function filenameFromUri(uri: string | null | undefined): string {
 function stripHash(url: string): string {
   const i = url.indexOf("#");
   return i >= 0 ? url.slice(0, i) : url;
-}
-
-function formatTimestamp(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${String(r).padStart(2, "0")}`;
-}
-
-function youtubeIdFromUrl(url: string): string | null {
-  const m = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/.exec(
-    url,
-  );
-  return m?.[1] ?? null;
 }

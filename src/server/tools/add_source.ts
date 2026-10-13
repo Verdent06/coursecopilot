@@ -3,30 +3,29 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
 import { type CourseRepo, RepoError, type SourceKind } from "../../db/repo.js";
 import type { IngestQueue } from "../../ingest/queue.js";
+import { parseYoutubeUrl } from "../../ingest/youtube/parse.js";
 import { assertExists, resolveLocalPath } from "../../util/files.js";
 import { newId } from "../../util/ids.js";
 import { fail, ok } from "../tool-result.js";
 
 const KIND_MILESTONE: Record<string, string> = {
   website: "website ingestion is not implemented yet (milestone M4)",
-  youtube: "YouTube ingestion is not implemented yet (milestone M5)",
-  transcript: "transcript ingestion is not implemented yet (milestone M5)",
   canvas: "Canvas ingestion is not implemented yet (milestone M6)",
 };
 
 /**
- * Enqueue a source for ingestion. M2 implements kind=file and kind=folder.
- * Returns a job_id immediately so the host can poll get_ingest_status.
+ * Enqueue a source for ingestion. File, folder, youtube, and transcript kinds
+ * are implemented. Returns a job_id immediately so the host can poll get_ingest_status.
  */
 export const addSourceInputSchema = z.object({
   course_id: z.string().describe("Course slug returned by add_course"),
   kind: z
     .enum(["website", "file", "folder", "youtube", "transcript", "canvas"])
-    .describe("Source type. M2 supports file and folder."),
+    .describe("Source type. Supports file, folder, youtube, and transcript."),
   uri: z
     .string()
     .describe(
-      "URL, canvas://course/<id>, or an absolute filesystem path / file:// URI for file and folder",
+      "YouTube watch/playlist URL, transcript .vtt/.srt path or URL, canvas://course/<id>, or an absolute filesystem path / file:// URI for file and folder",
     ),
   options: z
     .object({
@@ -54,7 +53,7 @@ export function registerAddSource(server: McpServer, repo: CourseRepo, queue: In
     {
       title: "Add source",
       description:
-        "Enqueue a course source for ingestion. File and folder kinds index local PDF, PPTX, Markdown, and TXT. Returns a job_id; poll get_ingest_status.",
+        "Enqueue a course source for ingestion. File/folder index local PDF, PPTX, Markdown, and TXT. youtube fetches captions (timestamps + youtu.be deep links). transcript indexes a local or remote VTT/SRT. Returns a job_id; poll get_ingest_status.",
       inputSchema: addSourceInputSchema,
       outputSchema: addSourceOutputSchema,
       annotations: {
@@ -79,6 +78,26 @@ export function registerAddSource(server: McpServer, repo: CourseRepo, queue: In
           }
           if (kind === "folder" && !st.isDirectory()) {
             throw new RepoError(`uri is a file; use kind "file" for ${abs}`);
+          }
+        }
+        if (kind === "youtube") {
+          const parsed = parseYoutubeUrl(uri);
+          if (!parsed) {
+            throw new RepoError(
+              `Not a YouTube video or playlist URL: "${uri}". Use watch, youtu.be, shorts, embed, or playlist?list=...`,
+            );
+          }
+        }
+        if (kind === "transcript") {
+          if (!/^https?:\/\//i.test(uri)) {
+            const abs = resolveLocalPath(uri);
+            assertExists(abs);
+            const st = statSync(abs);
+            if (st.isDirectory()) {
+              throw new RepoError(
+                `uri is a directory; use a .vtt or .srt file for kind "transcript"`,
+              );
+            }
           }
         }
         repo.requireCourse(course_id);

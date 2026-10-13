@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<transcript>
+  <text start="0" dur="4.5">Welcome to the automata theory lecture.</text>
+  <text start="4.5" dur="7.5">Today we prove that a to the n b to the n is not regular using the pumping lemma.</text>
+  <text start="12" dur="8">Assume for contradiction that the language is regular and let p be the pumping length.</text>
+  <text start="20" dur="8">Choose the string w equal to a to the p b to the p, which is longer than p.</text>
+  <text start="65" dur="9">Any split of w into xyz must place y entirely in the a block.</text>
+  <text start="74" dur="8">Pumping down then yields fewer a symbols than b symbols, so the result is not in the language.</text>
+</transcript>

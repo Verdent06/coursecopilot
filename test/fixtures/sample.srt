@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:05,000
+This SubRip transcript covers deterministic finite automata.
+
+2
+00:00:05,000 --> 00:00:12,000
+A DFA has a finite set of states, an alphabet, and a transition function.
+
+3
+00:01:00,000 --> 00:01:08,000
+The accept states decide which strings the machine recognizes.

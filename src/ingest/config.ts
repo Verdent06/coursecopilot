@@ -1,4 +1,4 @@
-/** Chunking and file-ingest knobs (spec §8, §9.3). */
+/** Chunking and file-ingest knobs (spec §8, §9.3, §9.4). */
 
 /** Target size of a chunk in approximate tokens. */
 export const TARGET_TOKENS = 350;
@@ -23,3 +23,13 @@ export const TOPIC_DEDUP_COSINE = 0.85;
 
 /** Assign leftover chunks to nearest topic centroid above this cosine. */
 export const TOPIC_ASSIGN_COSINE = 0.4;
+
+/** Caption cues are grouped into ~60 s windows before token merging (spec §8, §9.4). */
+export const CAPTION_WINDOW_SECONDS = 60;
+
+/** Expand a YouTube playlist to at most this many videos (spec §9.4). */
+export const YOUTUBE_PLAYLIST_CAP = 50;
+
+/** Shown when a video has no caption track (spec §9.4 / §9.5). */
+export const NO_CAPTIONS_FALLBACK =
+  "No captions available. Export a .vtt/.srt from Canvas, Kaltura, or Panopto and add it with kind=transcript, or wait for v1.1 local Whisper.";

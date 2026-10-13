@@ -822,3 +822,18 @@ Chosen while implementing the learning layer.
 7. **Heuristic topics run after ingest.** Candidates come from document titles, slide titles, and heading_path segments; generic "Page N" / "Slide N" / filenames are dropped. Dedupe cosine 0.85 and leftover-chunk centroid assignment 0.4 use the local embedder when available. Host `set_topics` does not get overwritten.
 8. **`record_quiz_attempt` attempt ids are `qa_<ulid>`.** Item ids are `qi_<ulid>`. Topic ids created here are `t_<ulid>`. `correct` accepts boolean or 0/1.
 9. **Planner dates are UTC calendar days** from `now` (injectable in tests). D = max(1, days until exam) or 7 if none. Last day is a mixed `practice` (exam_sim) session; topic-attributed minutes still go to review/quiz sessions so "A gets the most minutes" is testable.
+
+---
+
+## 26. Spec amendments (M5)
+
+Chosen while implementing YouTube captions + VTT/SRT.
+
+1. **No extra npm caption library.** YouTube player JSON (Innertube ANDROID, then watch-page `ytInitialPlayerResponse` / `"captions":` split) plus a hand-written VTT/SRT/timedtext parser. Fallbacks when that yields no tracks: `yt-dlp -J` if on PATH (override with `COURSECOPILOT_YTDLP`), then an Internet Archive `youtube-<id>/<id>.en.vtt` mirror if one exists. Datacenter IPs often get YouTube's "Sign in to confirm you’re not a bot" interstitial; private/age-restricted videos still skip without hitting those fallbacks.
+2. **Locator `video_id`.** Chunk locators store `{url, video_id, start_s, end_s}` (and `title`). Citations still render `https://youtu.be/<id>?t=<n>s` as in M3. Transcript locators use `{path|url, start_s, end_s}`.
+3. **Caption windows.** Cues group into ~60 s spans (`CAPTION_WINDOW_SECONDS`), then adjacent windows merge until ~350 tokens. `chunkSegment` may still split a long window; both pieces keep the same `start_s`/`end_s`.
+4. **Playlist expansion.** `/playlist?list=` (or `/watch?list=` with no `v`) expands up to 50 videos. A `watch?v=&list=` share link is a single video. Extra playlist entries are skipped with a cap reason.
+5. **`kind: transcript`** accepts an absolute local `.vtt`/`.srt` (or `file://`) and `http(s)` URLs. Remote mode still refuses local paths unless `--allow-path` (same as files). Folder ingest does **not** pick up VTT/SRT; use `kind: "transcript"`.
+6. **Fallback copy.** No captions / private / age-restricted videos are skipped (job `error` if nothing indexed, `partial` if some videos succeeded) with a message to export VTT/SRT or wait for v1.1 Whisper. yt-dlp missing is silent; the same fallback text still applies.
+7. **Unit tests mock network.** Recorded HTML/JSON/XML fixtures under `test/fixtures/youtube/`. Live YouTube is a manual/demo script (`scripts/youtube-demo.ts`), not CI.
+8. **Schema version stays 2.** No migration. FTS triggers from M1 index caption text like any other chunk.

@@ -1,0 +1,21 @@
+{
+  "id": "abcdefghijk",
+  "title": "Lecture 1: Automata (yt-dlp)",
+  "duration": 3600,
+  "subtitles": {
+    "en": [
+      {
+        "ext": "json3",
+        "url": "https://www.youtube.com/api/timedtext?v=abcdefghijk&lang=en&fmt=json3"
+      }
+    ]
+  },
+  "automatic_captions": {
+    "en": [
+      {
+        "ext": "vtt",
+        "url": "https://www.youtube.com/api/timedtext?v=abcdefghijk&lang=en&kind=asr"
+      }
+    ]
+  }
+}

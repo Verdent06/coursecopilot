@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -210,6 +210,12 @@ describe("MCP stdio e2e", () => {
       arguments: { course_id: "eecs376-f26", kind: "website", uri: "https://example.com" },
     });
     expect(website.isError).toBe(true);
+
+    const badYt = await client.callTool({
+      name: "add_source",
+      arguments: { course_id: "eecs376-f26", kind: "youtube", uri: "https://vimeo.com/123" },
+    });
+    expect(badYt.isError).toBe(true);
 
     const db = new Database(join(home, "cc.db"), { readonly: true, fileMustExist: true });
     try {
@@ -432,5 +438,49 @@ describe("MCP stdio e2e", () => {
     expect(
       (removed.structuredContent as { removed_chunks: number }).removed_chunks,
     ).toBeGreaterThan(0);
+  }, 180_000);
+
+  it("add_source(transcript) indexes VTT timestamps; search_course cites mm:ss", async () => {
+    const { client, home } = await connect();
+    const vttPath = join(home, "lecture.vtt");
+    copyFileSync(join(repoRoot, "test/fixtures/sample.vtt"), vttPath);
+
+    const added = await client.callTool({
+      name: "add_course",
+      arguments: { title: "Automata", course_id: "auto-s11" },
+    });
+    expect(added.isError).toBeFalsy();
+
+    const queued = await client.callTool({
+      name: "add_source",
+      arguments: { course_id: "auto-s11", kind: "transcript", uri: vttPath },
+    });
+    expect(queued.isError).toBeFalsy();
+    const jobId = (queued.structuredContent as { job_id: string }).job_id;
+    const job = await waitForJob(client, jobId);
+    expect(job.state).toBe("done");
+    expect(job.docs).toBe(1);
+
+    const search = await client.callTool({
+      name: "search_course",
+      arguments: {
+        course_id: "auto-s11",
+        query: "pumping lemma a to the n b to the n is not regular",
+        k: 3,
+      },
+    });
+    expect(search.isError).toBeFalsy();
+    const body = search.structuredContent as {
+      results: Array<{
+        text: string;
+        citation: { kind: string; label: string; start_s: number | null; url: string };
+      }>;
+    };
+    expect(body.results.length).toBeGreaterThan(0);
+    expect(body.results[0]?.citation.kind).toBe("transcript");
+    expect(body.results[0]?.citation.label).toMatch(/\d+:\d{2}/);
+    expect(body.results[0]?.citation.start_s).not.toBeNull();
+    expect(body.results[0]?.text).toMatch(/pumping lemma/i);
+    console.log("e2e transcript search_course", JSON.stringify(body, null, 2));
   }, 180_000);
 });

@@ -1,0 +1,9 @@
+{
+  "_type": "playlist",
+  "id": "PLtestplaylist1",
+  "title": "Automata lectures",
+  "entries": [
+    { "id": "abcdefghijk", "title": "Lecture 1: Automata" },
+    { "id": "bcdefghijkl", "title": "Lecture 2: DFAs" }
+  ]
+}
