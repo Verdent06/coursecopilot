@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+.coursecopilot/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+!.env.example
+tmp/
+.vitest/
