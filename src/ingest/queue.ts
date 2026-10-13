@@ -5,19 +5,21 @@ import { log } from "../util/log.js";
 import { nowIso } from "../util/time.js";
 import type { Embedder } from "./embed.js";
 import { ingestFileSource } from "./sources/file.js";
+import { ingestTranscriptSource } from "./sources/transcript.js";
+import { ingestYoutubeSource } from "./sources/youtube.js";
 import { extractAndAssignTopics } from "./topics.js";
 import type { IngestResult, SkipReason } from "./types.js";
+import type { YoutubeClient } from "./youtube/client.js";
 
 export type IngestQueueOptions = {
   repo: CourseRepo;
   allowLocalPaths?: boolean;
   embedder?: Embedder | null;
+  youtube?: YoutubeClient;
 };
 
 const UNIMPLEMENTED: Record<string, string> = {
   website: "website ingestion is not implemented yet (milestone M4)",
-  youtube: "YouTube ingestion is not implemented yet (milestone M5)",
-  transcript: "transcript ingestion is not implemented yet (milestone M5)",
   canvas: "Canvas ingestion is not implemented yet (milestone M6)",
 };
 
@@ -45,7 +47,12 @@ export class IngestQueue {
     if (unimplemented) {
       throw new RepoError(unimplemented);
     }
-    if (source.kind !== "file" && source.kind !== "folder") {
+    if (
+      source.kind !== "file" &&
+      source.kind !== "folder" &&
+      source.kind !== "youtube" &&
+      source.kind !== "transcript"
+    ) {
       throw new RepoError(`Unsupported source kind "${source.kind}"`);
     }
     const jobId = `job_${newId()}`;
@@ -97,11 +104,7 @@ export class IngestQueue {
     };
 
     try {
-      const result: IngestResult = await ingestFileSource(
-        { repo: this.opts.repo, allowLocalPaths: this.allowLocalPaths },
-        job.source_id,
-        persistProgress,
-      );
+      const result: IngestResult = await this.ingest(job.source_id, persistProgress);
       try {
         await this.embedSource(job.source_id, persistProgress, result.skipped);
       } catch (err) {
@@ -145,6 +148,38 @@ export class IngestQueue {
       });
       this.opts.repo.updateSource(job.source_id, { status: "error", error: message });
     }
+  }
+
+  private async ingest(
+    sourceId: string,
+    persistProgress: (progress: number, message: string, skipped: SkipReason[]) => void,
+  ): Promise<IngestResult> {
+    const source = this.opts.repo.getSource(sourceId);
+    if (!source) {
+      throw new RepoError(`Unknown source_id "${sourceId}"`);
+    }
+    if (source.kind === "file" || source.kind === "folder") {
+      return ingestFileSource(
+        { repo: this.opts.repo, allowLocalPaths: this.allowLocalPaths },
+        sourceId,
+        persistProgress,
+      );
+    }
+    if (source.kind === "youtube") {
+      return ingestYoutubeSource(
+        { repo: this.opts.repo, youtube: this.opts.youtube },
+        sourceId,
+        persistProgress,
+      );
+    }
+    if (source.kind === "transcript") {
+      return ingestTranscriptSource(
+        { repo: this.opts.repo, allowLocalPaths: this.allowLocalPaths },
+        sourceId,
+        persistProgress,
+      );
+    }
+    throw new RepoError(`Unsupported source kind "${source.kind}"`);
   }
 
   private async embedSource(

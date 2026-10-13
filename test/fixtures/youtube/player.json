@@ -1,0 +1,25 @@
+{
+  "videoDetails": {
+    "videoId": "abcdefghijk",
+    "title": "Lecture 1: Automata",
+    "lengthSeconds": "3600"
+  },
+  "playabilityStatus": { "status": "OK" },
+  "captions": {
+    "playerCaptionsTracklistRenderer": {
+      "captionTracks": [
+        {
+          "baseUrl": "https://www.youtube.com/api/timedtext?v=abcdefghijk&lang=en",
+          "languageCode": "en",
+          "name": { "simpleText": "English" }
+        },
+        {
+          "baseUrl": "https://www.youtube.com/api/timedtext?v=abcdefghijk&lang=en&kind=asr",
+          "languageCode": "en",
+          "kind": "asr",
+          "name": { "simpleText": "English (auto-generated)" }
+        }
+      ]
+    }
+  }
+}

@@ -8,6 +8,7 @@ export type Locator = {
   anchor?: string;
   start_s?: number;
   end_s?: number;
+  video_id?: string;
 };
 
 export type ExtractedSegment = {

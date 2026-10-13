@@ -9,7 +9,7 @@
     "ignoreUnknown": true,
     "includes": [
       "src/**",
-      "test/**",
+      "test/**/*.ts",
       "scripts/**",
       "package.json",
       "tsconfig.json",

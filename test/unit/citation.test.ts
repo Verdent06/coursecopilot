@@ -89,6 +89,18 @@ describe("citations", () => {
     expect(yt.label).toContain("2:05");
     expect(yt.url).toBe("https://youtu.be/abcdefghijk?t=125s");
 
+    const ytId = buildCitation({
+      ...base,
+      source_kind: "youtube",
+      mime: "text/vtt",
+      doc_title: "Lecture 7",
+      doc_url: null,
+      heading_path: null,
+      locator: { video_id: "abcdefghijk", start_s: 90, end_s: 120 },
+    });
+    expect(ytId.url).toBe("https://youtu.be/abcdefghijk?t=90s");
+    expect(ytId.label).toContain("1:30");
+
     const canvas = buildCitation({
       ...base,
       source_kind: "canvas",
