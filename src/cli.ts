@@ -155,7 +155,7 @@ program
   .option("--course-id <id>", "Override the course slug")
   .option("--registry <url>", "Registry index URL (or COURSECOPILOT_PACK_REGISTRY)")
   .action(async (pack: string, opts: { courseId?: string; registry?: string }) => {
-    const ctx = createAppContext({
+    const ctx = cliContext({
       registryUrl: opts.registry,
     });
     try {
@@ -170,16 +170,20 @@ program
       const jobs = ctx.repo.listIngestStatus({ course_id: result.course_id });
       for (const job of jobs) {
         process.stderr.write(`  ${job.job_id}: ${job.state} — ${job.message}\n`);
+        for (const skip of job.skipped) {
+          process.stderr.write(`    skipped ${skip.url}: ${skip.reason}\n`);
+        }
       }
       const course = ctx.repo.listCourses().find((c) => c.course_id === result.course_id);
       process.stdout.write(
         `Installed ${result.pack_id} → ${result.course_id}` +
           (course ? ` (${course.chunk_count} chunks, ${course.source_count} sources)\n` : "\n"),
       );
-    } catch (err) {
-      failCli(err);
-    } finally {
       ctx.opened.db.close();
+      process.exit(0);
+    } catch (err) {
+      ctx.opened.db.close();
+      failCli(err);
     }
   });
 
@@ -195,7 +199,7 @@ program
   )
   .option("--include-local-paths", "Mention local file paths under connect_yourself", false)
   .action((course: string, opts: { out?: string; includeLocalPaths?: boolean }) => {
-    const ctx = createAppContext();
+    const ctx = cliContext();
     try {
       const exported = ctx.packs.exportPack(course, {
         include_local_paths: Boolean(opts.includeLocalPaths),
@@ -216,10 +220,11 @@ program
         process.stdout.write(text);
         process.stderr.write(`also wrote ${dest}\n`);
       }
-    } catch (err) {
-      failCli(err);
-    } finally {
       ctx.opened.db.close();
+      process.exit(0);
+    } catch (err) {
+      ctx.opened.db.close();
+      failCli(err);
     }
   });
 
@@ -230,7 +235,7 @@ program
   .option("--installed", "Only show packs already installed", false)
   .option("--registry <url>", "Registry index URL")
   .action(async (query: string | undefined, opts: { installed?: boolean; registry?: string }) => {
-    const ctx = createAppContext({ registryUrl: opts.registry });
+    const ctx = cliContext({ registryUrl: opts.registry });
     try {
       const { packs } = await ctx.packs.listPacks({
         query,
@@ -238,7 +243,8 @@ program
       });
       if (packs.length === 0) {
         process.stdout.write("No packs found.\n");
-        return;
+        ctx.opened.db.close();
+        process.exit(0);
       }
       for (const pack of packs) {
         const bits = [
@@ -252,10 +258,11 @@ program
         ].filter(Boolean);
         process.stdout.write(`${bits.join("  ")}\n`);
       }
-    } catch (err) {
-      failCli(err);
-    } finally {
       ctx.opened.db.close();
+      process.exit(0);
+    } catch (err) {
+      ctx.opened.db.close();
+      failCli(err);
     }
   });
 
@@ -271,22 +278,37 @@ program
       return;
     }
     if (opts.course) {
-      const ctx = createAppContext();
+      const ctx = cliContext();
       try {
         wipeCourse(ctx.repo, opts.course);
         process.stdout.write(`Wiped course ${opts.course}\n`);
-      } catch (err) {
-        failCli(err);
-      } finally {
         ctx.opened.db.close();
+        process.exit(0);
+      } catch (err) {
+        ctx.opened.db.close();
+        failCli(err);
       }
-      return;
     }
     const result = wipeDatabaseFile();
     process.stdout.write(
       result.removed ? `Wiped ${result.path}\n` : `No database at ${result.path}\n`,
     );
+    process.exit(0);
   });
+
+function cliContext(extra: { registryUrl?: string } = {}) {
+  const delayRaw = process.env.COURSECOPILOT_CRAWL_DELAY_MS;
+  const crawlDelayMs =
+    delayRaw != null && delayRaw !== "" && Number.isFinite(Number(delayRaw))
+      ? Number(delayRaw)
+      : undefined;
+  return createAppContext({
+    ...extra,
+    crawlDelayMs,
+    allowLocalPaths: true,
+    allowPrivateNetwork: true,
+  });
+}
 
 function failCli(err: unknown): never {
   const message =

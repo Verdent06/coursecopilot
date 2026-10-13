@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -10,14 +10,44 @@ import { serveDirectory } from "../helpers/static-server.js";
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const cliJs = join(repoRoot, "dist", "cli.js");
 
-function run(home: string, args: string[]): { stdout: string; stderr: string } {
-  const env = { ...process.env, COURSECOPILOT_HOME: home, COURSECOPILOT_CRAWL_DELAY_MS: "0" };
-  const stdout = execFileSync(process.execPath, [cliJs, ...args], {
-    cwd: repoRoot,
-    env,
-    encoding: "utf8",
+/** Async spawn so the parent event loop can still serve the fixture site. */
+function run(
+  home: string,
+  args: string[],
+): Promise<{ stdout: string; stderr: string; status: number }> {
+  const env = {
+    ...process.env,
+    COURSECOPILOT_HOME: home,
+    COURSECOPILOT_CRAWL_DELAY_MS: "0",
+    COURSECOPILOT_DISABLE_EMBEDDINGS: "1",
+  };
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [cliJs, ...args], {
+      cwd: repoRoot,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString("utf8");
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf8");
+    });
+    const timer = setTimeout(() => {
+      child.kill("SIGTERM");
+      reject(new Error(`timed out: coursecopilot ${args.join(" ")}\n${stderr}\n${stdout}`));
+    }, 90_000);
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      resolve({ stdout, stderr, status: code ?? 1 });
+    });
   });
-  return { stdout, stderr: "" };
 }
 
 describe("CLI add-pack / export-pack / list-packs / wipe", () => {
@@ -56,15 +86,19 @@ describe("CLI add-pack / export-pack / list-packs / wipe", () => {
       }),
     );
 
-    const added = run(home, ["add-pack", packPath]);
+    const added = await run(home, ["add-pack", packPath]);
+    expect(added.status, added.stderr).toBe(0);
     expect(added.stdout).toMatch(/cli-mini/);
+    expect(added.stdout).toMatch(/[1-9]\d* chunks/);
 
-    const listed = run(home, ["list-packs", "--installed"]);
+    const listed = await run(home, ["list-packs", "--installed"]);
+    expect(listed.status, listed.stderr).toBe(0);
     expect(listed.stdout).toMatch(/cli-mini/);
 
     const exportedPath = join(home, "out", "cli-mini.json");
     mkdirSync(join(home, "out"), { recursive: true });
-    const exported = run(home, ["export-pack", "cli-mini", "-o", exportedPath]);
+    const exported = await run(home, ["export-pack", "cli-mini", "-o", exportedPath]);
+    expect(exported.status, exported.stderr).toBe(0);
     expect(exported.stdout).toContain(exportedPath);
     const manifest = JSON.parse(readFileSync(exportedPath, "utf8")) as {
       id: string;
@@ -74,12 +108,14 @@ describe("CLI add-pack / export-pack / list-packs / wipe", () => {
     expect(manifest.sources[0]?.kind).toBe("website");
     expect(manifest.sources[0]?.url).toContain(server.baseUrl);
 
-    run(home, ["wipe", "--yes"]);
-    const empty = run(home, ["list-packs", "--installed"]);
+    const wiped = await run(home, ["wipe", "--yes"]);
+    expect(wiped.status, wiped.stderr).toBe(0);
+    const empty = await run(home, ["list-packs", "--installed"]);
     expect(empty.stdout).toMatch(/No packs found/i);
 
-    const restored = run(home, ["add-pack", exportedPath]);
+    const restored = await run(home, ["add-pack", exportedPath]);
+    expect(restored.status, restored.stderr).toBe(0);
     expect(restored.stdout).toMatch(/cli-mini/);
-    expect(restored.stdout).toMatch(/chunks/i);
+    expect(restored.stdout).toMatch(/[1-9]\d* chunks/);
   }, 180_000);
 });
