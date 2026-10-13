@@ -74,22 +74,31 @@ export function createYoutubeClient(opts: YoutubeClientOptions = {}): YoutubeCli
       }
       return info;
     }
-    if (info && info.playability !== "ok") {
+    // Private / age-gated videos will not grow caption tracks via yt-dlp either.
+    // Bot-checks and empty player responses should still try yt-dlp (spec §9.4).
+    if (info && (info.playability === "private" || info.playability === "age_restricted")) {
       return info;
     }
-    if (disableYtDlp) {
-      return (
-        info ?? {
-          videoId,
-          title: videoId,
-          playability: "unavailable",
-          tracks: [],
-        }
-      );
+    if (!disableYtDlp) {
+      const dumped = await tryYtDlpVideo(ytdlp, videoId);
+      if (dumped && dumped.tracks.length > 0) {
+        return dumped;
+      }
     }
-    const dumped = await tryYtDlpVideo(ytdlp, videoId);
-    if (dumped) {
-      return dumped;
+    const archived = await tryArchiveCaptions(fetchImpl, videoId);
+    if (archived) {
+      const title =
+        (info?.title && info.title !== videoId ? info.title : null) ??
+        (await fetchOEmbedTitle(videoId)) ??
+        archived.title ??
+        videoId;
+      return {
+        videoId,
+        title,
+        duration_s: info?.duration_s,
+        playability: "ok",
+        tracks: archived.tracks,
+      };
     }
     return (
       info ?? {
@@ -103,7 +112,9 @@ export function createYoutubeClient(opts: YoutubeClientOptions = {}): YoutubeCli
   }
 
   async function fetchCaptionCues(track: CaptionTrack): Promise<CaptionCue[]> {
-    const urls = [withJson3Format(track.baseUrl), track.baseUrl];
+    const urls = track.baseUrl.includes("timedtext")
+      ? [withJson3Format(track.baseUrl), track.baseUrl]
+      : [track.baseUrl];
     for (const url of urls) {
       try {
         const body = await fetchText(fetchImpl, url);
@@ -252,6 +263,42 @@ async function tryYtDlpPlaylist(
     }
     return [];
   }
+}
+
+/** Internet Archive often mirrors YouTube captions as youtube-<id>/<id>.en.vtt. */
+export function archiveCaptionUrls(videoId: string): string[] {
+  const item = `https://archive.org/download/youtube-${videoId}`;
+  return [`${item}/${videoId}.en.vtt`, `${item}/${videoId}.en.srt`, `${item}/${videoId}.vtt`];
+}
+
+async function tryArchiveCaptions(
+  fetchImpl: YoutubeFetch,
+  videoId: string,
+): Promise<{ title?: string; tracks: CaptionTrack[] } | null> {
+  for (const url of archiveCaptionUrls(videoId)) {
+    try {
+      const res = await fetchImpl(url, {
+        headers: { "User-Agent": UA, Accept: "text/vtt, text/plain, */*" },
+      });
+      if (!res.ok) {
+        continue;
+      }
+      const body = await res.text();
+      if (parseTimedText(body).length === 0) {
+        continue;
+      }
+      return {
+        tracks: [
+          {
+            baseUrl: url,
+            languageCode: "en",
+            name: "English (Internet Archive mirror)",
+          },
+        ],
+      };
+    } catch {}
+  }
+  return null;
 }
 
 async function fetchText(fetchImpl: YoutubeFetch, url: string): Promise<string> {

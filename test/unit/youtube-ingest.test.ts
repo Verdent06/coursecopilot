@@ -136,6 +136,95 @@ describe("YouTube ingest", () => {
     expect(repo.listChunksForCourse("x")[0]?.text).toMatch(/pumping lemma/i);
   });
 
+  it("still tries yt-dlp after a YouTube bot-check playability status", async () => {
+    const { opened, repo } = openMemory();
+    closers.push(() => opened.db.close());
+    repo.addCourse({ title: "X", course_id: "x" });
+    const source = repo.insertSource({
+      id: "src-bot",
+      course_id: "x",
+      kind: "youtube",
+      uri: `https://youtu.be/${FIXTURE_VIDEO_ID}`,
+    });
+    const xml = readFileSync(join(fixtureDir, "captions.xml"), "utf8");
+    const ytdlpJson = readFileSync(join(fixtureDir, "ytdlp-video.json"), "utf8");
+    let ytdlpCalls = 0;
+    const client = createYoutubeClient({
+      async fetch(url: string) {
+        const href = String(url);
+        if (href.includes("youtubei/v1/player") || href.includes("watch?v=")) {
+          return new Response(
+            JSON.stringify({
+              playabilityStatus: {
+                status: "LOGIN_REQUIRED",
+                reason: "Sign in to confirm you’re not a bot",
+              },
+            }),
+            { status: 200 },
+          );
+        }
+        if (href.includes("timedtext")) {
+          return new Response(xml, { status: 200 });
+        }
+        return new Response("{}", { status: 200 });
+      },
+      async runYtDlp() {
+        ytdlpCalls += 1;
+        return { stdout: ytdlpJson, stderr: "", code: 0 };
+      },
+    });
+    const result = await ingestYoutubeSource({ repo, youtube: client }, source.id);
+    expect(ytdlpCalls).toBeGreaterThan(0);
+    expect(result.docs).toBe(1);
+  });
+
+  it("falls back to an Internet Archive youtube-<id> VTT when player and yt-dlp fail", async () => {
+    const { opened, repo } = openMemory();
+    closers.push(() => opened.db.close());
+    repo.addCourse({ title: "X", course_id: "x" });
+    const source = repo.insertSource({
+      id: "src-ia",
+      course_id: "x",
+      kind: "youtube",
+      uri: `https://youtu.be/${FIXTURE_VIDEO_ID}`,
+    });
+    const vtt = readFileSync(join(fixtureDir, "../sample.vtt"), "utf8");
+    const client = createYoutubeClient({
+      async fetch(url: string) {
+        const href = String(url);
+        if (href.includes("youtubei/v1/player") || href.includes("watch?v=")) {
+          return new Response(
+            JSON.stringify({
+              playabilityStatus: {
+                status: "LOGIN_REQUIRED",
+                reason: "Sign in to confirm you’re not a bot",
+              },
+            }),
+            { status: 200 },
+          );
+        }
+        if (href.includes("oembed")) {
+          return new Response(JSON.stringify({ title: "Vectors (Archive fallback)" }), {
+            status: 200,
+          });
+        }
+        if (href.includes("archive.org") && href.endsWith(".en.vtt")) {
+          return new Response(vtt, { status: 200 });
+        }
+        return new Response("missing", { status: 404 });
+      },
+      async runYtDlp() {
+        return { stdout: "", stderr: "bot check", code: 1 };
+      },
+    });
+    const result = await ingestYoutubeSource({ repo, youtube: client }, source.id);
+    expect(result.docs).toBe(1);
+    const chunks = repo.listChunksForCourse("x");
+    expect(chunks[0]?.text).toMatch(/pumping lemma/i);
+    const loc = JSON.parse(chunks[0]?.locator_json ?? "{}") as { video_id?: string };
+    expect(loc.video_id).toBe(FIXTURE_VIDEO_ID);
+  });
+
   it("queue submits a youtube job that finishes done", async () => {
     const { opened, repo } = openMemory();
     closers.push(() => opened.db.close());

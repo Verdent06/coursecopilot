@@ -132,10 +132,14 @@ export async function extractYoutubeVideo(
 
   const track = selectCaptionTrack(info.tracks);
   if (!track) {
-    const extra =
-      info.playability === "unavailable" && info.playabilityReason
-        ? ` (${info.playabilityReason})`
-        : "";
+    const reason = info.playabilityReason ?? "";
+    if (/bot|sign in/i.test(reason)) {
+      return {
+        skip: `YouTube asked to sign in (bot check). Install yt-dlp on PATH and retry, or export a .vtt/.srt and add it with kind=transcript.`,
+        error: true,
+      };
+    }
+    const extra = info.playability === "unavailable" && reason ? ` (${reason})` : "";
     return { skip: `${NO_CAPTIONS_FALLBACK}${extra}`, error: true };
   }
 
