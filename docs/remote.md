@@ -154,7 +154,7 @@ Official: [Connect & manage custom apps for Gemini Spark](https://support.google
 
 ### Local clients (not this milestone)
 
-Stdio remains the default (`coursecopilot` with no args). Remote HTTP with a bearer token also works for Claude Code (`claude mcp add --transport http`) and Gemini CLI (`gemini mcp add -t http`). M10 `setup --remote` will print these URLs.
+Stdio remains the default (`coursecopilot` with no args). Remote HTTP with a bearer token also works for Claude Code (`claude mcp add --transport http`) and Gemini CLI (`gemini mcp add -t http`). `npx coursecopilot setup --remote` starts this HTTP server plus a tunnel and prints the paste URLs.
 
 ## Guards
 

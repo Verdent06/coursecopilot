@@ -13,6 +13,8 @@ import { startQuickTunnel } from "./remote/tunnel.js";
 import { createAppContext } from "./server/index.js";
 import { formatConnectorHelp, startHttpServer } from "./server/transport-http.js";
 import { startStdio } from "./server/transport-stdio.js";
+import { doctorExitCode, formatDoctorText, runDoctor } from "./setup/doctor.js";
+import { runSetup } from "./setup/run-setup.js";
 import { log } from "./util/log.js";
 import { VERSION } from "./version.js";
 
@@ -182,6 +184,94 @@ canvas
   });
 
 program
+  .command("setup")
+  .description(
+    "Detect installed MCP clients and write CourseCopilot into each config (backup + merge). For web clients, prints paste URLs; --remote starts HTTP + a tunnel.",
+  )
+  .option("--dry-run", "Show the planned writes without changing files", false)
+  .option("--undo", "Restore the most recent backups written by setup", false)
+  .option(
+    "-c, --client <id>",
+    "Limit to claude-desktop, claude-code, cursor, and/or gemini (repeat or comma-separate)",
+    collectList,
+  )
+  .option("--remote", "Start serve --http plus a Cloudflare tunnel and print paste URLs", false)
+  .option(
+    "-y, --yes",
+    "Non-interactive; skip optional Canvas / leccap / pack / model prompts",
+    false,
+  )
+  .option("--canvas", "Run canvas connect as part of setup", false)
+  .option("--leccap", "Run login leccap as part of setup", false)
+  .option("--pack <id>", "Install a starter pack after configuring clients")
+  .option("--download-model", "Pre-download the MiniLM embedding model", false)
+  .option("--port <n>", "HTTP port for --remote", process.env.PORT ?? "8787")
+  .option("--token <token>", "Bearer token for --remote")
+  .option("--secret-path <token>", "Secret URL path for --remote")
+  .action(async (opts: Record<string, unknown>) => {
+    try {
+      const report = await runSetup({
+        dryRun: Boolean(opts.dryRun),
+        undo: Boolean(opts.undo),
+        client: opts.client as string[] | undefined,
+        remote: Boolean(opts.remote),
+        yes: Boolean(opts.yes),
+        canvas: Boolean(opts.canvas),
+        leccap: Boolean(opts.leccap),
+        pack: typeof opts.pack === "string" ? opts.pack : undefined,
+        downloadModel: Boolean(opts.downloadModel),
+        port: Number(opts.port),
+        token: typeof opts.token === "string" ? opts.token : undefined,
+        secretPath: typeof opts.secretPath === "string" ? opts.secretPath : undefined,
+      });
+      if (report.remoteHandle) {
+        const shutdown = async () => {
+          await report.remoteHandle?.close();
+          process.exit(0);
+        };
+        process.on("SIGINT", () => void shutdown());
+        process.on("SIGTERM", () => void shutdown());
+        return;
+      }
+      process.exit(report.ok ? 0 : 1);
+    } catch (err) {
+      failCli(err);
+    }
+  });
+
+program
+  .command("doctor")
+  .description(
+    "Check Node, native modules, DB, embeddings, client configs, Canvas, leccap, and the pack registry.",
+  )
+  .option("--json", "Machine-readable JSON on stdout", false)
+  .option("--offline", "Do not download the embedding model", false)
+  .option("--url <url>", "Public MCP origin to probe (or COURSECOPILOT_PUBLIC_URL)")
+  .option("--token <token>", "Bearer token for the remote probe")
+  .option("--secret-path <token>", "Secret URL path for the remote probe")
+  .action(async (opts: Record<string, unknown>) => {
+    try {
+      const report = await runDoctor({
+        json: Boolean(opts.json),
+        offline: Boolean(opts.offline),
+        url: typeof opts.url === "string" ? opts.url : undefined,
+        token: typeof opts.token === "string" ? opts.token : undefined,
+        secretPath: typeof opts.secretPath === "string" ? opts.secretPath : undefined,
+        skipModelDownload:
+          Boolean(opts.offline) || process.env.COURSECOPILOT_DISABLE_EMBEDDINGS === "1",
+      });
+      if (opts.json) {
+        process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      } else {
+        process.stdout.write(`${formatDoctorText(report)}\n`);
+      }
+      process.exit(doctorExitCode(report));
+    } catch (err) {
+      failCli(err);
+    }
+  });
+
+program
   .command("add-pack")
   .description("Install a course pack from a registry id, URL, or local manifest path.")
   .argument("<pack>", "Pack id (registry), http(s) URL, or local .json/.yaml path")
@@ -341,6 +431,14 @@ function cliContext(extra: { registryUrl?: string } = {}) {
     allowLocalPaths: true,
     allowPrivateNetwork: true,
   });
+}
+
+function collectList(value: string, previous: string[]): string[] {
+  const bits = value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return [...(previous ?? []), ...bits];
 }
 
 function failCli(err: unknown): never {
