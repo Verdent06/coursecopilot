@@ -274,14 +274,15 @@ export async function handleHttpRequest(request: Request, opts: RouteOpts): Prom
     }
   }
 
+  if (path === "/" && request.method === "GET" && !isMcpStyle(request)) {
+    return landingPage(request, opts);
+  }
+
   const mcpPath = isMcpEndpoint(path, opts.secretPath);
   const headRoot = path === "/" && (request.method === "HEAD" || request.method === "POST");
   const mcpAccept = isMcpStyle(request) && path === "/";
 
   if (!mcpPath && !headRoot && !mcpAccept) {
-    if (path === "/" && request.method === "GET") {
-      return landingPage(request, opts);
-    }
     return cors(
       new Response(JSON.stringify({ error: "not_found" }), {
         status: 404,

@@ -100,6 +100,11 @@ describe("MCP HTTP e2e", () => {
     expect(health.ok).toBe(true);
     expect(await health.json()).toMatchObject({ ok: true, name: "coursecopilot" });
 
+    const landing = await fetch(`${origin}/`);
+    expect(landing.ok).toBe(true);
+    expect(landing.headers.get("content-type") ?? "").toMatch(/text\/html/);
+    expect(await landing.text()).toMatch(/Add to Claude/);
+
     const client = await connect(`${origin}/mcp/${secret}`);
     const listed = await client.listTools();
     const names = listed.tools.map((t) => t.name).sort();
