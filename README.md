@@ -1,82 +1,107 @@
 # CourseCopilot
 
-Your classes, inside the AI you already use. Open-source MCP connector that turns any course (website, Canvas, PDFs, lectures) into cited answers and quizzes in Claude, ChatGPT, and more.
+**Your classes inside the AI you already use, free. Share a course in one line.**
 
-No API key. The host AI does all generation; this server fetches, indexes, retrieves, and stores learning state.
+Course packs for your AI. Any course website (or your Canvas course) becomes a cited, quiz-tracking tutor in Claude, ChatGPT, Gemini, and Cursor that you can share with your class.
 
-**Status:** M0–M11 (including **M10 setup + doctor** for every client) plus UMich CAEN Lecture Capture (`leccap`). See [docs/SPEC.md](docs/SPEC.md).
+No API key. The host AI does all the writing; this server fetches, indexes, retrieves, and remembers what you missed.
 
-## Requirements
+[![CI](https://github.com/Verdent06/coursecopilot/actions/workflows/ci.yml/badge.svg)](https://github.com/Verdent06/coursecopilot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Install MCP Server in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=coursecopilot&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNvdXJzZWNvcGlsb3RAbGF0ZXN0Il19)
 
-- Node.js 20 or later
+![CourseCopilot demo placeholder](docs/assets/demo-placeholder.svg)
 
-## Install
+> **Demo GIF/video (placeholder).** Milestone M14 records the 20-second walkthrough: `setup` → `add-pack` → “quiz me on what I missed” with a clickable slide citation, then the same weak spot in ChatGPT / Gemini. Until then this card stands in.
+
+## Works with
+
+| Client | How | Notes |
+|---|---|---|
+| **Claude Desktop** | `npx coursecopilot setup` or double-click `coursecopilot.mcpb` | Local stdio |
+| **claude.ai** | Custom connector → Web → paste HTTPS URL | Remote. Free plan: 1 custom connector |
+| **Claude Code** | `claude mcp add -s user coursecopilot -- npx -y coursecopilot@latest` | Local stdio |
+| **Cursor** | setup, or the badge above | Local stdio |
+| **ChatGPT** | Developer mode → Add custom MCP server | Remote. **Plan-gated** (see below) |
+| **Gemini CLI** | `gemini mcp add -s user coursecopilot npx -y coursecopilot@latest` | Local stdio; no eligibility gates |
+| **Gemini app** | Spark → Custom apps → paste HTTPS URL | Remote. **Personal Google accounts only** |
+
+Status details: [docs/clients.md](docs/clients.md). Google AI Studio has no MCP client.
+
+## Quick start (30 seconds)
 
 ```bash
 npx coursecopilot setup
 npx coursecopilot add-pack harvard-cs50x
 ```
 
-Then ask Claude / Cursor / Gemini CLI: **quiz me on what I missed.**
+Then ask: **quiz me on what I missed.**
 
-`setup` detects Claude Desktop, Claude Code, Cursor, and Gemini CLI, backs up each config, and merges `mcpServers.coursecopilot` without touching other servers. It prints exact paste URLs for **claude.ai**, **ChatGPT** (developer mode — plan-gated), and the **Gemini app** (Custom apps for Spark; personal US Google accounts, 18+ only).
+`setup` detects Claude Desktop, Claude Code, Cursor, and Gemini CLI, backs up each config, and merges `mcpServers.coursecopilot`. For claude.ai / ChatGPT / the Gemini app it prints the click path (or start a tunnel with `--remote`).
 
 ```bash
-npx coursecopilot setup --remote    # serve --http + Cloudflare tunnel; paste the URL
-npx coursecopilot doctor            # Node, native modules, DB, clients, Canvas, leccap, registry
-npx coursecopilot doctor --json
+npx coursecopilot doctor            # Node, native modules, DB, clients, Canvas, registry
 npx coursecopilot setup --undo      # restore the last config backups
 ```
 
-Manual JSON / MCPB / Cursor deeplink / click paths: **[docs/install.md](docs/install.md)**.
+### Per client
 
-### Run the MCP server yourself (stdio)
+**Claude Desktop.** `npx coursecopilot setup` (or `--client claude-desktop`). Restart Claude fully. Or download `coursecopilot.mcpb` from [Releases](https://github.com/Verdent06/coursecopilot/releases) and double-click it (Settings → Extensions → Advanced → Install Extension). Optional MCPB fields: Canvas URL + token (sensitive); prefer `canvas connect`.
 
-With no arguments, `coursecopilot` speaks MCP over stdio (stdout is the protocol; logs go to stderr).
+**claude.ai.** `npx coursecopilot setup --remote` (or a [Deploy to Render](https://render.com/deploy?repo=https://github.com/Verdent06/coursecopilot) button). Then **Customize → Connectors → Add → Custom → Web** → paste `https://<host>/mcp/<secret>` → Authentication: No sign in.
+
+**Claude Code.**
 
 ```bash
-npm install
-npm run build
-node dist/cli.js
-# or: npm install -g . && coursecopilot
-npx @modelcontextprotocol/inspector node dist/cli.js
+claude mcp add -s user coursecopilot -- npx -y coursecopilot@latest
 ```
 
-Data lives in `~/.coursecopilot/cc.db` (override with `COURSECOPILOT_HOME`).
+**Cursor.** Click the badge at the top, or:
 
-## Remote mode (claude.ai, ChatGPT, Gemini app)
+```bash
+npx coursecopilot setup --client cursor
+```
+
+Manual: the same JSON under `mcpServers` in `~/.cursor/mcp.json`.
+
+**ChatGPT.** Needs a **plan with developer mode** — check [OpenAI's page](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt). We did not confirm Free/Plus. **Pro is read/fetch only**; recording a quiz may need Claude/Cursor or Business/Enterprise/Edu. Enable developer mode → Plugins → + → Add custom MCP server → paste `https://<host>/mcp/<secret>`.
+
+**Gemini CLI.**
+
+```bash
+gemini mcp add -s user coursecopilot npx -y coursecopilot@latest
+```
+
+**Gemini app.** Spark custom apps only. **Personal Google account** (not work/school — a `umich.edu` login will not work), US, 18+, English, Keep Activity on. Add on the web: Settings & help → Connected Apps → Custom apps for Spark → URL `https://<host>/mcp` (OAuth). School accounts: use Gemini CLI.
+
+Full click paths: [docs/install.md](docs/install.md) · [docs/remote.md](docs/remote.md).
+
+## Remote / always-on (claude.ai, ChatGPT, Gemini app)
 
 Those clients connect from the vendor's cloud, so the server must be public HTTPS.
 
 ```bash
-node dist/cli.js serve --http --port 8787
-node dist/cli.js tunnel          # Cloudflare quick tunnel (hostname changes each run)
+npx coursecopilot setup --remote    # serve --http + Cloudflare tunnel (hostname changes each run)
 ```
 
-Auth: secret URL path `/mcp/<token>` (claude.ai / ChatGPT no-auth), `Authorization: Bearer` (Cursor / Claude Code / Gemini CLI), and **single-user OAuth 2.1 + DCR** (required for Gemini Spark).
+One-click always-on (your instance, your volume, your token):
 
-One-click always-on: [Deploy to Render](https://render.com/deploy?repo=https://github.com/Verdent06/coursecopilot) · `deploy/fly.toml` · `deploy/cloudflare/`.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Verdent06/coursecopilot)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new?template=https://github.com/Verdent06/coursecopilot)
 
-Exact click paths, official-doc citations, and plan/eligibility gates: **[docs/remote.md](docs/remote.md)**.
+Fly: `fly launch --config deploy/fly.toml`. Image: `ghcr.io/verdent06/coursecopilot` (published on version tags). Dockerfile at the repo root.
 
-ChatGPT support needs a plan with developer mode — check [OpenAI's page](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt). Gemini app custom apps need Spark, a personal US Google account, 18+, English, Keep Activity on; school accounts should use Gemini CLI instead.
+## Features
 
-## Course packs
-
-A pack is a small JSON/YAML manifest: course id/name/term, **http(s) source URLs** (website, YouTube, PDF, transcript), and a lecture → topic map. It contains **no copyrighted content**. Classmates download materials from the original sources.
-
-```bash
-npx coursecopilot add-pack harvard-cs50x      # registry id
-npx coursecopilot add-pack ./my-course.json   # local manifest
-npx coursecopilot export-pack eecs376-f26 -o pack.json
-npx coursecopilot list-packs
-```
-
-`export-pack` keeps public website / YouTube / PDF / transcript URLs. It **drops Canvas, login-gated lecture-capture (leccap), and local files**, and may add a `connect_yourself` placeholder so the importer attaches those themselves.
-
-Registry (in this repo, cached 24h): `COURSECOPILOT_PACK_REGISTRY` or the default [`https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/index.json`](https://raw.githubusercontent.com/Verdent06/coursecopilot/main/packs/index.json). Schema: [`packs/schema/pack.schema.json`](packs/schema/pack.schema.json). Contribute a pack: [`CONTRIBUTING-packs.md`](CONTRIBUTING-packs.md). Details: [`docs/packs.md`](docs/packs.md).
-
-Starter packs (open courses only): `harvard-cs50x`, `harvard-cs50p`, `mit-6.006-s20`, `mit-6.042j-f10`, `mit-18.06-s10`, `mit-6.045j-s11`, `mit-6.0001-f16`, `mit-6.034-f10`, `mit-missing-semester`, `stanford-cs229`, `stanford-cs231n`, `berkeley-cs61a`, `cmu-15-445-f25`, `3b1b-linear-algebra`, `umich-eecs376`.
+| | |
+|---|---|
+| **Files** | PDF (per-page), PPTX (slides + notes), Markdown, TXT, folders |
+| **Websites** | robots.txt, same-site crawl, linked PDFs/PPTX, incremental sync |
+| **YouTube** | Captions with timestamps and `youtu.be?t=` citations; VTT/SRT import |
+| **UMich lecture capture** | `login leccap` (you sign in; passwords never stored), slide + caption citations |
+| **Canvas** | Read-only: courses, files, modules, pages, assignments + due dates, announcements. Your token, local only |
+| **Course packs + registry** | One-line `add-pack <id>`. Links and topic maps only — no copyrighted content |
+| **Quizzes / weak spots** | Host AI writes questions from cited chunks; we record attempts and rank what to restudy |
 
 ## Connect Canvas
 
@@ -84,63 +109,101 @@ Starter packs (open courses only): `harvard-cs50x`, `harvard-cs50p`, `mit-6.006-
 npx coursecopilot canvas connect
 ```
 
-Enter your instance URL (any school: `https://umich.instructure.com`, …) and a personal access token from **Account → Settings → Approved Integrations**. The token is stored in `~/.coursecopilot/secrets.json` (mode 0600) or `CANVAS_BASE_URL` / `CANVAS_TOKEN`. It is **never** written to the database, packs, logs, or client MCP configs.
+Account → Settings → Approved Integrations → + New Access Token. Stored in `~/.coursecopilot/secrets.json` (0600). **Never** written to the database, packs, logs, or client MCP configs.
 
-Read-only: courses, files, modules, pages, assignments + due dates, announcements. `add_source` `kind: "canvas"` `uri: "canvas://course/<id>"` indexes pages/files/assignment text. Prompt: `whats_due`.
+If your school blocks tokens: use a public course website, a pack, or download files and `add_source` a folder. Details: [docs/canvas.md](docs/canvas.md).
 
-**If your school blocks tokens** (no “+ New Access Token” button, or `tokens_blocked`): use a public course website, a pack, or download files and add a folder. Details: [docs/canvas.md](docs/canvas.md).
+## Browse packs
 
-## Tools (M0–M11)
+```bash
+npx coursecopilot add-pack harvard-cs50x
+npx coursecopilot list-packs
+npx coursecopilot export-pack eecs376-f26 -o pack.json
+```
 
-| Tool | Role |
+| Pack | Course |
 |---|---|
-| `ping` | Health check (scaffold) |
-| `add_course` | Create a course |
-| `list_courses` | List courses, source/chunk counts, exams |
-| `set_exam` | Add or replace an exam date |
-| `add_source` | Enqueue a source. `website` (robots, same-site crawl, linked PDFs/PPTX), `file`/`folder` (PDF, PPTX, Markdown, TXT), `youtube` (captions with timestamps), `transcript` (VTT/SRT), `canvas` (`canvas://course/<id>`, local token only), `leccap` (UMich CAEN Lecture Capture). |
-| `canvas_list_courses` / `_modules` / `_files` / `_pages` / `canvas_get_page` | Live Canvas reads (files fall back to module items on 403) |
-| `canvas_list_assignments` / `canvas_list_announcements` | Live due dates and announcements (short cache) |
-| `get_ingest_status` | Poll an ingest job (`docs`, `chunks`, `skipped`) |
-| `list_sources` | List sources on a course |
-| `sync_course` | Incremental re-fetch (unchanged documents skip re-embedding) |
-| `remove_source` | Delete a source and its chunks |
-| `search_course` | Hybrid keyword + vector search with citations (page, slide, `youtu.be/ID?t=Ns`, or lecture `#t=`) |
-| `get_chunk` / `get_document` | Fetch a cited chunk (plus neighbors) or a full document |
-| `search` / `fetch` | ChatGPT-compatible aliases of search_course / get_chunk |
-| `get_course_outline` | Documents, lectures, topics |
-| `set_topics` | Host-labeled topics bound to chunks/keywords |
-| `generate_quiz_context` | Grounded chunks + instructions so the **host AI** writes questions (no server LLM) |
-| `record_quiz_attempt` | Store graded items and update Beta topic mastery (with forgetting) |
-| `get_weak_spots` | Weakest topics plus suggested citations |
-| `get_study_plan` | Deterministic review → quiz plan, mixed exam_sim on the last day |
-| `add_pack` | Install a pack (registry id, URL, or path). Enqueues sources and applies the topic map |
-| `export_pack` | Write a links-only manifest. Drops Canvas, leccap, and local files |
-| `list_packs` | Browse the cached registry index and installed packs |
+| `harvard-cs50x` / `harvard-cs50p` | CS50 / CS50 Python |
+| `mit-6.006-s20` `mit-6.042j-f10` `mit-18.06-s10` `mit-6.045j-s11` `mit-6.0001-f16` `mit-6.034-f10` `mit-missing-semester` | MIT OCW / Missing Semester |
+| `stanford-cs229` `stanford-cs231n` | Stanford public notes |
+| `berkeley-cs61a` | SICP |
+| `cmu-15-445-f25` | Intro to Database Systems |
+| `3b1b-linear-algebra` | 3Blue1Brown |
+| `umich-eecs376` | Public eecs376.org (Canvas / leccap are `connect_yourself`) |
 
-Resources: `coursecopilot://courses`, `coursecopilot://document/{id}`, `coursecopilot://course/{id}/outline`, `coursecopilot://course/{id}/mastery`
+Don't see your course? Add the website, `export-pack`, and open a PR. Guide: [CONTRIBUTING-packs.md](CONTRIBUTING-packs.md). Schema: [`packs/schema/pack.schema.json`](packs/schema/pack.schema.json).
 
-Prompts: `quiz_me_on_misses`, `quiz_me`, `study_session`, `exam_prep`, `explain_with_sources`, `add_my_course`, `whats_due`.
+`export-pack` **drops Canvas, lecture-capture, and local files**. Classmates attach those themselves.
 
-YouTube: `add_source` with `kind: "youtube"` and a watch, youtu.be, shorts, embed, or playlist URL. Captions are fetched (English manual, then English auto, then any language). If scraping fails, `yt-dlp` (if on PATH) and then an Internet Archive `youtube-<id>` VTT mirror are tried. Videos without captions are skipped with a pointer to export a VTT/SRT (or v1.1 Whisper). Playlists expand up to 50 videos.
+## Add any course
 
-Transcripts: `kind: "transcript"` with a local `.vtt`/`.srt` path or an `http(s)` URL. Caption windows are ~60s, merged to ~350 tokens, and keep `start_s`/`end_s`.
-
-### UMich lecture recordings (under a minute)
-
-```bash
-npx coursecopilot login leccap
+```json
+{ "name": "add_source", "arguments": { "course_id": "eecs376-f26", "kind": "website", "uri": "https://eecs376.org/" } }
 ```
 
-Sign in with your UMich account (Okta + Duo) in the browser that opens. Passwords are never stored. Then `add_source` with `kind: "leccap"` and the Canvas **Lecture Recordings** site URL (`/leccap/site/...`) or a player URL (`/leccap/player/r/...`). Citations look like `EECS 376 – Lecture 10/12 @ 23:14, slide 12` and deep-link to the player. Details: [docs/leccap.md](docs/leccap.md).
+Kinds: `website`, `file`, `folder`, `youtube`, `transcript`, `canvas` (`canvas://course/<id>`), `leccap`. Then `search_course`, `generate_quiz_context`, `record_quiz_attempt`, `get_weak_spots`.
 
-## Develop
+UMich recordings: `npx coursecopilot login leccap` then `kind: "leccap"`. [docs/leccap.md](docs/leccap.md).
+
+## Share with your class
+
+1. `npx coursecopilot export-pack <course-id> -o packs/<id>.json`
+2. Open a PR. CI validates the schema and rejects embedded content.
+3. Classmates run `npx coursecopilot add-pack <id>` and download materials **from the original sources**.
+
+## Privacy (local-first)
+
+All data lives in `~/.coursecopilot/`. No telemetry. Nothing leaves the machine except fetches to sources you added, a one-time Hugging Face model download (override with `COURSECOPILOT_MODEL_PATH`), and **retrieved chunks sent to whichever AI you chose** (that vendor's privacy policy). Canvas tokens stay on the process you run. Packs never contain lecture content. Full write-up: [docs/privacy.md](docs/privacy.md).
+
+## How it works
+
+The host AI generates. CourseCopilot indexes locally (SQLite + FTS5 + MiniLM vectors) and returns cited chunks. No LLM SDK is in this repo. [docs/architecture.md](docs/architecture.md).
+
+## Comparison
+
+| | CourseCopilot | NotebookLM | BetterCampus | CourseMCP / canvas-mcp |
+|---|---|---|---|---|
+| Inside Claude / ChatGPT / Gemini / Cursor | Yes | Separate app | Browser extension | MCP, Canvas-only |
+| Any course site + files + YouTube | Yes | Manual upload | LMS UI | Canvas |
+| Shareable packs (links only) | Yes | No | No | No |
+| Quizzes + weak spots by concept | Yes | Per deck | Study sets | No |
+| Price | Free, MIT | Free | Pro $19/mo | Free (wrappers) |
+
+## Tools
+
+Auto-generated reference: **[docs/tools.md](docs/tools.md)**. Prompts include `quiz_me_on_misses`, `whats_due`, `exam_prep`.
+
+## Troubleshooting
 
 ```bash
-npm test          # unit + e2e stdio + e2e HTTP (builds dist/ if needed)
-npm run typecheck
-npm run lint
+npx coursecopilot doctor
+npx coursecopilot doctor --json
 ```
+
+- Setup refused to write: existing JSON is invalid — paste the snippet or `--undo`.
+- Client doesn't see the server: restart Claude / reload Cursor MCP / `/mcp` in Claude Code or Gemini CLI.
+- Native module errors: `npm rebuild better-sqlite3 sqlite-vec`. Search still works keyword-only.
+- Tunnel hostname changed: quick tunnels do that; use Render / Fly / Railway for a stable URL.
+
+## FAQ
+
+**Does CourseCopilot call an LLM?** No. Claude / ChatGPT / Gemini / Cursor write the answers. CI fails if an LLM SDK appears in dependencies.
+
+**Where is my data?** `~/.coursecopilot/` on the machine (or volume) running the server. See [docs/privacy.md](docs/privacy.md).
+
+**Will my Canvas token leak?** It lives in `secrets.json` (0600) or env on *your* process. It is never in packs, the DB, logs, or client MCP JSON. Do not paste it into a server someone else runs.
+
+**ChatGPT Free/Plus?** Unknown. You need a plan with developer mode. Pro can call read/fetch tools only.
+
+**Can I use the Gemini app with a school Google account?** No. Spark custom apps are personal-accounts-only. Use Gemini CLI.
+
+**What is in a pack?** Links, metadata, and a topic map. Not slides, not transcripts, never Canvas.
+
+**npm name?** `coursecopilot` (unscoped). First publish is the human tagging `v0.1.0` with `NPM_TOKEN` set.
+
+## Contributing
+
+Code: [CONTRIBUTING.md](CONTRIBUTING.md). Packs: [CONTRIBUTING-packs.md](CONTRIBUTING-packs.md). Roadmap: OAuth polish, local Whisper, Playwright for JS-only sites — [docs/SPEC.md](docs/SPEC.md).
 
 ## License
 

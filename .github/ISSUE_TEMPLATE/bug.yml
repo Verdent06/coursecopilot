@@ -1,0 +1,57 @@
+name: Bug report
+description: Something does not work as documented
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks. Paste `npx coursecopilot doctor --json` if the problem is install, native modules, or a client config. Never paste a Canvas token or lecture-capture cookies.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected vs what you got.
+    validations:
+      required: true
+  - type: dropdown
+    id: client
+    attributes:
+      label: Client
+      options:
+        - Claude Desktop
+        - claude.ai
+        - Claude Code
+        - Cursor
+        - ChatGPT
+        - Gemini CLI
+        - Gemini app (Spark)
+        - CLI only (no MCP host)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: CourseCopilot version
+      placeholder: "0.1.0 (or git SHA)"
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: "v22.x"
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - Other
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Commands, tool calls, or a redacted log. Do not include secrets.
+    validations:
+      required: true

@@ -109,6 +109,14 @@ fly deploy
 
 1 GB RAM (ONNX MiniLM). Config: [`deploy/fly.toml`](fly.toml).
 
+[Fly launch from GitHub](https://fly.io/launch?repo=https://github.com/Verdent06/coursecopilot) if you prefer the browser flow.
+
+### Railway
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new?template=https://github.com/Verdent06/coursecopilot)
+
+Uses the repo-root [`Dockerfile`](../Dockerfile) (`railway.toml` / `railway.json`). Set `COURSECOPILOT_TOKEN` / `COURSECOPILOT_SECRET_PATH` as variables, mount a volume on `/data`, and set `COURSECOPILOT_PUBLIC_URL` to the public HTTPS origin. Optional `CANVAS_TOKEN` on **your** service only.
+
 ### Cloudflare Containers
 
 Native addons need Containers, not Workers. Template: [`deploy/cloudflare/`](cloudflare/). If Containers cannot load `better-sqlite3` in your account, skip this and use Render/Fly.

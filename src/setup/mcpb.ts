@@ -4,8 +4,9 @@ import { stdioServerSpec } from "./command.js";
 /**
  * MCPB `server.mcp_config` shape (same fields Claude Desktop writes for a
  * Node extension). Tokens stay in MCPB `user_config` (sensitive), never in
- * `claude_desktop_config.json`. The packed `.mcpb` is a M13 release artifact;
- * `manifest.json` at the repo root is the source.
+ * `claude_desktop_config.json`. Pack with `npm run pack:mcpb` → `coursecopilot.mcpb`.
+ * `manifest.json` at the repo root is the source; launch is `npx -y coursecopilot@latest`
+ * so native modules stay on npm (not inside a platform-specific zip).
  */
 export function mcpbCompatibleEntry(): {
   command: string;
