@@ -1,4 +1,5 @@
-import { dirname, join } from "node:path";
+import { existsSync } from "node:fs";
+import { dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SERVER_NAME } from "../version.js";
 
@@ -7,19 +8,67 @@ export type StdioServerSpec = {
   args: string[];
 };
 
+/** Published stdio entry for README badges and post-npm-publish installs. */
+export const PUBLISHED_STDIO_SPEC: StdioServerSpec = {
+  command: "npx",
+  args: ["-y", `${SERVER_NAME}@latest`],
+};
+
+export type ResolveStdioOptions = {
+  env?: NodeJS.ProcessEnv;
+  /** Package root (directory that contains package.json). */
+  packageRoot?: string;
+  /** Override published-on-npm detection. */
+  published?: boolean | null;
+};
+
 /**
- * Default stdio launch used in every local client config (spec §12).
- * `COURSECOPILOT_SETUP_LOCAL=1` points at this checkout's `dist/cli.js` instead
- * of npm (useful while developing before publish).
+ * Directory that contains this package's `package.json`.
+ * `src/setup/command.ts` and `dist/setup/command.js` are both two levels down.
  */
-export function stdioServerSpec(): StdioServerSpec {
-  if (process.env.COURSECOPILOT_SETUP_LOCAL === "1") {
-    return {
-      command: process.execPath,
-      args: [join(dirname(fileURLToPath(import.meta.url)), "..", "cli.js")],
-    };
+export function packageRootFromHere(from = import.meta.url): string {
+  return join(dirname(fileURLToPath(from)), "..", "..");
+}
+
+/**
+ * True when this process is a git/source checkout (has `src/cli.ts`) and is not
+ * an `npm install` / `npx` copy under `node_modules`.
+ */
+export function isSourceCheckout(root = packageRootFromHere()): boolean {
+  if (root.includes(`${sep}node_modules${sep}`) || root.endsWith(`${sep}node_modules`)) {
+    return false;
   }
-  return { command: "npx", args: ["-y", `${SERVER_NAME}@latest`] };
+  return existsSync(join(root, "src", "cli.ts")) && existsSync(join(root, "package.json"));
+}
+
+/** Absolute `node` + `dist/cli.js` (or `src/cli.ts` before the first build). */
+export function localStdioSpec(root = packageRootFromHere()): StdioServerSpec {
+  const distCli = join(root, "dist", "cli.js");
+  const srcCli = join(root, "src", "cli.ts");
+  return { command: process.execPath, args: [existsSync(distCli) ? distCli : srcCli] };
+}
+
+/**
+ * Default stdio launch used in every local client config.
+ *
+ * - `COURSECOPILOT_SETUP_NPX=1` → always `npx -y coursecopilot@latest`
+ * - `COURSECOPILOT_SETUP_LOCAL=1` or a source checkout → this repo's
+ *   absolute `node` + `dist/cli.js` (the npm package is unpublished)
+ * - otherwise the published npx entry
+ */
+export function stdioServerSpec(opts: ResolveStdioOptions = {}): StdioServerSpec {
+  const env = opts.env ?? process.env;
+  const root = opts.packageRoot ?? packageRootFromHere();
+  if (env.COURSECOPILOT_SETUP_NPX === "1") {
+    return { ...PUBLISHED_STDIO_SPEC };
+  }
+  if (env.COURSECOPILOT_SETUP_LOCAL === "1" || isSourceCheckout(root)) {
+    return localStdioSpec(root);
+  }
+  if (opts.published === false) {
+    return localStdioSpec(root);
+  }
+  return { ...PUBLISHED_STDIO_SPEC };
 }
 
 export function claudeDesktopEntry(): StdioServerSpec {
@@ -41,12 +90,6 @@ export function geminiCliEntry(): StdioServerSpec {
 }
 
 export type JsonStdioEntry = StdioServerSpec & { type?: "stdio" };
-
-/** Spec §12 published stdio entry. Independent of COURSECOPILOT_SETUP_LOCAL. */
-export const PUBLISHED_STDIO_SPEC: StdioServerSpec = {
-  command: "npx",
-  args: ["-y", `${SERVER_NAME}@latest`],
-};
 
 export const CURSOR_INSTALL_BADGE_SRC = "https://cursor.com/deeplink/mcp-install-dark.svg";
 

@@ -9,6 +9,10 @@ import {
   OAuthErrorCode,
   requireBearerAuth,
 } from "@modelcontextprotocol/server";
+import { handleHostedPage, landingHtml } from "../hosted/pages.js";
+import { clientKey, RateLimiter } from "../hosted/rate-limit.js";
+import { LOCAL_USER_ID, UserContextCache } from "../hosted/runtime.js";
+import { UserStore } from "../hosted/users.js";
 import {
   isMcpEndpoint,
   pathMatchesSecret,
@@ -16,8 +20,10 @@ import {
   verifyStaticToken,
 } from "../remote/auth.js";
 import { requestOrigin, SingleUserOAuth } from "../remote/oauth.js";
+import { randomToken } from "../util/crypto.js";
 import { log } from "../util/log.js";
 import { getHomeDir } from "../util/paths.js";
+import { getRequestScope, isHostedMode, runWithScope } from "../util/scope.js";
 import { VERSION } from "../version.js";
 import { type CreateServerOptions, createAppContext, createServer } from "./index.js";
 
@@ -30,6 +36,10 @@ export type HttpServeOptions = CreateServerOptions & {
   oauth?: boolean;
   oauthAutoApprove?: boolean;
   allowedHosts?: string[];
+  /** Multi-user OAuth + per-user SQLite. Defaults from COURSECOPILOT_HOSTED / PORT. */
+  hosted?: boolean;
+  sessionSecret?: string;
+  rateLimitRpm?: number;
 };
 
 export type HttpServerHandle = {
@@ -40,44 +50,82 @@ export type HttpServerHandle = {
   secretPath?: string;
   origin: string;
   mcpUrl: string;
+  hosted: boolean;
   close: () => Promise<void>;
 };
 
 /**
  * Streamable HTTP MCP server (spec 2026-07-28, POST to a single endpoint).
- * Auth: static bearer, secret URL path `/mcp/<token>`, and single-user OAuth 2.1 + DCR.
+ * Auth: static bearer, secret URL path `/mcp/<token>`, and OAuth 2.1 + DCR + PKCE.
+ * Hosted mode isolates each OAuth user in `$COURSECOPILOT_HOME/users/<id>/`.
  */
 export async function startHttpServer(opts: HttpServeOptions): Promise<HttpServerHandle> {
   const bind = opts.bind ?? "127.0.0.1";
   const port = opts.port ?? 8787;
   const allowLocalPaths = opts.allowLocalPaths ?? false;
   const allowPrivateNetwork = opts.allowPrivateNetwork ?? false;
+  const hosted = opts.hosted ?? isHostedMode();
   const ownsContext = !opts.ctx;
-  const ctx = opts.ctx ?? createAppContext({ ...opts, allowLocalPaths, allowPrivateNetwork });
-  const homeDir = getHomeDir();
+  const processHome = opts.homeDir ?? getHomeDir();
+  const sessionSecret =
+    opts.sessionSecret || process.env.COURSECOPILOT_SESSION_SECRET || opts.token || randomToken(24);
+  const users = hosted ? new UserStore(processHome) : undefined;
+  const rateLimitRpm = opts.rateLimitRpm ?? Number(process.env.COURSECOPILOT_RATE_LIMIT_RPM || 120);
+  const limiter = new RateLimiter(Number.isFinite(rateLimitRpm) ? rateLimitRpm : 120);
+
+  const sharedCtx =
+    opts.ctx ??
+    createAppContext({
+      ...opts,
+      homeDir: processHome,
+      allowLocalPaths,
+      allowPrivateNetwork,
+      hostedTools: { enabled: false },
+    });
+
   const oauth =
     opts.oauth === false
       ? undefined
       : new SingleUserOAuth({
-          homeDir,
+          homeDir: processHome,
           autoApprove: opts.oauthAutoApprove ?? false,
           resourcePath: "/mcp",
+          hosted,
+          userStore: users,
+          sessionSecret,
         });
 
-  const mcpHandler: McpHttpHandler = createMcpHandler(() => createServer({ ctx }), {
-    onerror: (err) => log.error("mcp handler", err),
-  });
+  let userCache: UserContextCache | undefined;
+
+  const mcpHandler: McpHttpHandler = createMcpHandler(
+    () => {
+      const scope = getRequestScope();
+      if (hosted && scope && userCache) {
+        return createServer({ ctx: userCache.get(scope.userId) });
+      }
+      return createServer({ ctx: sharedCtx });
+    },
+    { onerror: (err) => log.error("mcp handler", err) },
+  );
 
   const allowedHosts = hostAllowList(bind, opts.allowedHosts, opts.publicUrl);
+  const route: RouteOpts = {
+    mcpHandler,
+    token: opts.token,
+    secretPath: opts.secretPath,
+    publicUrl: opts.publicUrl,
+    oauth,
+    hosted,
+    users,
+    sessionSecret,
+    limiter,
+    processHome,
+  };
 
   const node = toNodeHandler({
     fetch: (request, extra) =>
       handleHttpRequest(request, {
-        mcpHandler,
-        token: opts.token,
-        secretPath: opts.secretPath,
-        publicUrl: opts.publicUrl,
-        oauth,
+        ...route,
         extraAuth: extra?.authInfo,
       }),
   });
@@ -100,23 +148,37 @@ export async function startHttpServer(opts: HttpServeOptions): Promise<HttpServe
   const origin =
     opts.publicUrl?.replace(/\/+$/, "") ??
     `http://${bind === "0.0.0.0" ? "127.0.0.1" : bind}:${address.port}`;
-  const mcpUrl = opts.secretPath ? `${origin}/mcp/${opts.secretPath}` : `${origin}/mcp`;
+  route.publicUrl = origin;
+  if (hosted && users) {
+    userCache = new UserContextCache({
+      users,
+      processHome,
+      publicUrl: origin,
+      sessionSecret,
+      base: { ...opts, allowLocalPaths, allowPrivateNetwork, ctx: undefined },
+    });
+    route.userCache = userCache;
+  }
+  const mcpUrl = `${origin}/mcp`;
 
   const close = async () => {
     await mcpHandler.close();
     await new Promise<void>((resolve, reject) => {
       server.close((err) => (err ? reject(err) : resolve()));
     });
+    userCache?.closeAll();
     if (ownsContext) {
       try {
-        ctx.opened.db.close();
+        sharedCtx.opened.db.close();
       } catch {
         // already closed
       }
     }
   };
 
-  log.info(`coursecopilot HTTP MCP server v${VERSION} listening on ${mcpUrl}`);
+  log.info(
+    `coursecopilot HTTP MCP server v${VERSION} listening on ${mcpUrl}${hosted ? " (hosted multi-user)" : ""}`,
+  );
   return {
     server,
     port: address.port,
@@ -125,6 +187,7 @@ export async function startHttpServer(opts: HttpServeOptions): Promise<HttpServe
     secretPath: opts.secretPath,
     origin,
     mcpUrl,
+    hosted,
     close,
   };
 }
@@ -136,6 +199,12 @@ type RouteOpts = {
   publicUrl?: string;
   oauth?: SingleUserOAuth;
   extraAuth?: AuthInfo;
+  hosted?: boolean;
+  users?: UserStore;
+  userCache?: UserContextCache;
+  sessionSecret?: string;
+  limiter?: RateLimiter;
+  processHome?: string;
 };
 
 export async function handleHttpRequest(request: Request, opts: RouteOpts): Promise<Response> {
@@ -155,10 +224,53 @@ export async function handleHttpRequest(request: Request, opts: RouteOpts): Prom
     );
   }
 
+  if (opts.limiter && shouldRateLimit(path, request.method)) {
+    const limited = opts.limiter.check(clientKey(request));
+    if (!limited.ok) {
+      return cors(
+        new Response(
+          JSON.stringify({ error: "rate_limited", retry_after: limited.retryAfterSec }),
+          {
+            status: 429,
+            headers: {
+              "content-type": "application/json",
+              "retry-after": String(limited.retryAfterSec),
+            },
+          },
+        ),
+      );
+    }
+  }
+
   if (opts.oauth) {
     const oauthRes = await opts.oauth.handle(request);
     if (oauthRes) {
       return oauthRes;
+    }
+  }
+
+  if (opts.hosted && opts.users && opts.userCache && opts.sessionSecret) {
+    const origin = opts.publicUrl?.replace(/\/+$/, "") || requestOrigin(request);
+    const page = await handleHostedPage(request, {
+      origin,
+      sessionSecret: opts.sessionSecret,
+      users: opts.users,
+      contextFor: (userId) => {
+        const ctx = opts.userCache?.get(userId);
+        if (!ctx) {
+          throw new Error("hosted context missing");
+        }
+        return {
+          repo: ctx.repo,
+          queue: ctx.queue,
+          insertSource: (input) => {
+            ctx.repo.insertSource(input);
+          },
+        };
+      },
+    });
+    if (page) {
+      return cors(page);
     }
   }
 
@@ -181,6 +293,19 @@ export async function handleHttpRequest(request: Request, opts: RouteOpts): Prom
   const auth = await authenticate(request, opts, path);
   if (auth instanceof Response) {
     return cors(auth);
+  }
+
+  const userId =
+    (opts.hosted && opts.oauth?.userIdForToken(auth.token)) ||
+    (opts.hosted ? LOCAL_USER_ID : undefined);
+  if (userId && opts.hosted) {
+    const homeDir =
+      userId === LOCAL_USER_ID
+        ? (opts.processHome ?? getHomeDir())
+        : (opts.users?.userHome(userId) ?? getHomeDir());
+    return runWithScope({ userId, homeDir, allowEnvSecrets: false }, async () =>
+      cors(await opts.mcpHandler.fetch(request, { authInfo: auth })),
+    );
   }
   return cors(await opts.mcpHandler.fetch(request, { authInfo: auth }));
 }
@@ -318,26 +443,33 @@ function cors(response: Response): Response {
 
 function landingPage(request: Request, opts: RouteOpts): Response {
   const origin = opts.publicUrl?.replace(/\/+$/, "") || requestOrigin(request);
-  const secretUrl = opts.secretPath ? `${origin}/mcp/${opts.secretPath}` : `${origin}/mcp`;
-  const html = `<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/><title>CourseCopilot</title></head>
-<body style="font-family:system-ui;max-width:40rem;margin:3rem auto;padding:0 1rem">
-  <h1>CourseCopilot</h1>
-  <p>Streamable HTTP MCP server is running.</p>
-  <ul>
-    <li>Health: <a href="/health"><code>/health</code></a></li>
-    <li>MCP (OAuth / bearer): <code>${escapeHtml(`${origin}/mcp`)}</code></li>
-    <li>MCP (secret path): <code>${escapeHtml(secretUrl)}</code></li>
-  </ul>
-  <p>See <a href="https://github.com/Verdent06/coursecopilot/blob/main/docs/remote.md">docs/remote.md</a> for claude.ai, ChatGPT, and Gemini setup.</p>
-</body></html>`;
   return cors(
-    new Response(html, { status: 200, headers: { "content-type": "text/html; charset=utf-8" } }),
+    new Response(landingHtml(origin, Boolean(opts.hosted)), {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    }),
   );
 }
 
-function escapeHtml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function shouldRateLimit(path: string, method: string): boolean {
+  if (path === "/health" || path === "/healthz") {
+    return false;
+  }
+  if (path.startsWith("/.well-known/")) {
+    return false;
+  }
+  if (path === "/" && method === "GET") {
+    return false;
+  }
+  return (
+    path === "/mcp" ||
+    path.startsWith("/mcp/") ||
+    path.startsWith("/oauth/") ||
+    path.startsWith("/connect/") ||
+    path === "/upload" ||
+    path === "/register" ||
+    path === "/token"
+  );
 }
 
 /** Print connector URLs for web clients after serve/tunnel starts. */
@@ -346,30 +478,23 @@ export function formatConnectorHelp(
   secretPath: string | undefined,
   token: string,
 ): string {
-  const secretUrl = secretPath ? `${origin}/mcp/${secretPath}` : `${origin}/mcp`;
   const oauthUrl = `${origin}/mcp`;
+  const secretUrl = secretPath ? `${origin}/mcp/${secretPath}` : oauthUrl;
   return [
-    "Web clients (Anthropic's / OpenAI's / Google's cloud must reach this URL):",
+    "Paste this connector URL into Claude / ChatGPT / Gemini (OAuth):",
     "",
-    `  claude.ai:  ${secretUrl}`,
-    "    Customize → Connectors → Add → Custom → Web → paste URL → Authentication: No sign in",
-    "    Docs: https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp",
-    `    OAuth alternative: ${oauthUrl} → Sign in now (DCR / Claude published identity)`,
+    `  ${oauthUrl}`,
     "",
-    `  ChatGPT:    ${secretUrl}`,
-    "    Enable developer mode → Plugins → + → Add custom MCP server → URL → No authentication",
-    "    Docs: https://developers.openai.com/api/docs/guides/custom-mcp-server",
-    "    Plan-gated; Pro is read/fetch only. Check OpenAI's page for current plans.",
+    "  Claude:  Customize → Connectors → Add → Custom → Web → paste URL → Sign in now",
+    "  ChatGPT: developer mode → Add custom MCP server → URL (OAuth). Plan-gated.",
+    "  Gemini:  Spark → Custom apps → paste URL (DCR required).",
     "",
-    `  Gemini app: ${oauthUrl}`,
-    "    gemini.google.com → Settings & help → Connected Apps → Custom apps for Spark → Add a custom app",
-    "    Spark requires OAuth + Dynamic Client Registration. Approve the consent page on this machine.",
-    "    Docs: https://support.google.com/gemini/answer/17209137",
-    "    Gates: Gemini Spark, US, 18+, personal Google account (not school), English, Keep Activity on.",
+    "  Then in chat: ask to get started. No terminal.",
     "",
-    "  Cursor / Claude Code / Gemini CLI (remote):",
+    "  Cursor / Claude Code / Gemini CLI (remote bearer):",
     `    URL ${oauthUrl}  with header  Authorization: Bearer ${token}`,
+    `  Secret-path (weaker, no sign-in): ${secretUrl}`,
     "",
-    "The secret path is weaker than OAuth (anyone with the URL can use the server). Quick-tunnel hostnames change on restart.",
+    "Hosted deploys isolate each OAuth user. Quick-tunnel hostnames change on restart.",
   ].join("\n");
 }

@@ -2,6 +2,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "n
 import { dirname } from "node:path";
 import { log } from "../util/log.js";
 import { getSecretsPath } from "../util/paths.js";
+import { getRequestScope } from "../util/scope.js";
 import { CANVAS_ERROR, CanvasApiError } from "./errors.js";
 import { normalizeCanvasBaseUrl } from "./uri.js";
 
@@ -23,8 +24,10 @@ type SecretsFile = {
  * Otherwise `~/.coursecopilot/secrets.json` (0600). Never the DB.
  */
 export function loadCanvasCredentials(): CanvasCredentials | null {
-  const envToken = process.env.CANVAS_TOKEN?.trim();
-  const envBase = process.env.CANVAS_BASE_URL?.trim();
+  const scope = getRequestScope();
+  const allowEnv = scope?.allowEnvSecrets !== false;
+  const envToken = allowEnv ? process.env.CANVAS_TOKEN?.trim() : undefined;
+  const envBase = allowEnv ? process.env.CANVAS_BASE_URL?.trim() : undefined;
   const file = readSecretsFile();
   const fileToken = file?.canvas?.token?.trim();
   const fileBase = file?.canvas?.base_url?.trim();

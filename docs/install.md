@@ -1,6 +1,8 @@
 # Install
 
-Primary path: **`npx coursecopilot setup`**. It detects every local MCP client it can find, backs up each config, and merges `mcpServers.coursecopilot` without touching other servers.
+**Primary path (no terminal):** deploy CourseCopilot and paste `https://<host>/mcp` into Claude, ChatGPT, or Gemini. The landing page at `/` has the click path. Then ask **get started**. See the [README](../README.md).
+
+**Advanced / local:** `npx coursecopilot setup` (or `node dist/cli.js setup` from this checkout). It detects every local MCP client it can find, backs up each config, and merges `mcpServers.coursecopilot` without touching other servers.
 
 [![Install MCP Server in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=coursecopilot&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNvdXJzZWNvcGlsb3RAbGF0ZXN0Il19)
 

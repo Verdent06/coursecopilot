@@ -6,7 +6,7 @@ import { configureClaudeCode } from "../../src/setup/clients/claude-code.js";
 import { configureClaudeDesktop } from "../../src/setup/clients/claude-desktop.js";
 import { configureCursor } from "../../src/setup/clients/cursor.js";
 import { configureGeminiCli } from "../../src/setup/clients/gemini-cli.js";
-import { decodeCursorDeeplink } from "../../src/setup/command.js";
+import { decodeCursorDeeplink, stdioServerSpec } from "../../src/setup/command.js";
 import { detectClients } from "../../src/setup/detect.js";
 import { runSetup } from "../../src/setup/run-setup.js";
 import { createSetupContext, type LocalClientId } from "../../src/setup/types.js";
@@ -219,7 +219,6 @@ describe("Cursor deeplink", () => {
     );
     const decoded = decodeCursorDeeplink(out.deeplink);
     expect(decoded.name).toBe("coursecopilot");
-    expect(decoded.config.command).toBe("npx");
-    expect(decoded.config.args).toEqual(["-y", "coursecopilot@latest"]);
+    expect(decoded.config).toEqual(stdioServerSpec());
   });
 });

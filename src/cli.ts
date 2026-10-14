@@ -48,8 +48,13 @@ program
   .option("--secret-path <token>", "Secret URL path token (or COURSECOPILOT_SECRET_PATH)")
   .option("--allow-path", "Allow local file/folder sources over HTTP", false)
   .option("--public-url <url>", "Public origin for OAuth metadata (COURSECOPILOT_PUBLIC_URL)")
-  .option("--no-oauth", "Disable single-user OAuth (Gemini Spark needs OAuth)")
+  .option("--no-oauth", "Disable OAuth (Gemini Spark needs OAuth + DCR)")
   .option("--oauth-auto-approve", "Skip the OAuth consent page (tests only)", false)
+  .option(
+    "--hosted",
+    "Multi-user hosted mode: per-user SQLite + OAuth libraries (or COURSECOPILOT_HOSTED=1)",
+    false,
+  )
   .action(async (opts: Record<string, unknown>) => {
     if (!opts.http) {
       log.info(
@@ -81,6 +86,12 @@ program
         process.env.COURSECOPILOT_PUBLIC_URL,
       oauth,
       oauthAutoApprove: Boolean(opts.oauthAutoApprove),
+      hosted:
+        process.env.COURSECOPILOT_HOSTED === "1" || opts.hosted === true
+          ? true
+          : process.env.COURSECOPILOT_HOSTED === "0"
+            ? false
+            : undefined,
     });
     process.stderr.write(
       `${formatConnectorHelp(handle.origin, handle.secretPath, handle.token)}\n`,

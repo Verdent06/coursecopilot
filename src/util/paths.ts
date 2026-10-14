@@ -1,10 +1,18 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { getRequestScope } from "./scope.js";
 
 export const DB_FILENAME = "cc.db";
 
-/** Data directory: COURSECOPILOT_HOME, else ~/.coursecopilot */
+/**
+ * Data directory: request-scoped user home (hosted multi-user), else
+ * COURSECOPILOT_HOME, else ~/.coursecopilot.
+ */
 export function getHomeDir(): string {
+  const scoped = getRequestScope()?.homeDir;
+  if (scoped) {
+    return scoped;
+  }
   return process.env.COURSECOPILOT_HOME ?? join(homedir(), ".coursecopilot");
 }
 

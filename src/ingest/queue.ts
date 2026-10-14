@@ -3,6 +3,8 @@ import { type CourseRepo, RepoError } from "../db/repo.js";
 import { EMBED_BATCH } from "../retrieve/config.js";
 import { newId } from "../util/ids.js";
 import { log } from "../util/log.js";
+import type { RequestScope } from "../util/scope.js";
+import { runWithScope } from "../util/scope.js";
 import { nowIso } from "../util/time.js";
 import type { FetchLike } from "./crawl/fetch.js";
 import type { Embedder } from "./embed.js";
@@ -20,6 +22,8 @@ import type { YoutubeClient } from "./youtube/client.js";
 export type IngestQueueOptions = {
   repo: CourseRepo;
   allowLocalPaths?: boolean;
+  /** Hosted uploads under this prefix may be ingested even when local paths are off. */
+  trustedPathPrefix?: string;
   embedder?: Embedder | null;
   youtube?: YoutubeClient;
   allowPrivateNetwork?: boolean;
@@ -28,6 +32,7 @@ export type IngestQueueOptions = {
   leccap?: LeccapClient;
   canvas?: CanvasClient;
   canvasFetch?: FetchLike;
+  scope?: RequestScope;
   /** After heuristic topics (e.g. apply a pack lecture → topic map). */
   onSourceDone?: (sourceId: string, courseId: string) => Promise<void> | void;
 };
@@ -88,7 +93,12 @@ export class IngestQueue {
   private schedule(jobId: string): void {
     this.tail = this.tail.then(async () => {
       try {
-        await this.run(jobId);
+        const run = () => this.run(jobId);
+        if (this.opts.scope) {
+          await runWithScope(this.opts.scope, run);
+        } else {
+          await run();
+        }
       } catch (err) {
         log.error("ingest job failed", err);
       }
@@ -192,7 +202,11 @@ export class IngestQueue {
     }
     if (source.kind === "file" || source.kind === "folder") {
       return ingestFileSource(
-        { repo: this.opts.repo, allowLocalPaths: this.allowLocalPaths },
+        {
+          repo: this.opts.repo,
+          allowLocalPaths: this.allowLocalPaths,
+          trustedPathPrefix: this.opts.trustedPathPrefix,
+        },
         sourceId,
         persistProgress,
       );

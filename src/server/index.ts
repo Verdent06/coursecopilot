@@ -1,8 +1,10 @@
+import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/server";
 import type { CanvasClient } from "../canvas/client.js";
 import type { CanvasRuntime } from "../canvas/tools.js";
 import { type OpenedDatabase, openDatabase } from "../db/migrate.js";
 import { CourseRepo } from "../db/repo.js";
+import type { FlowPurpose } from "../hosted/flow.js";
 import type { FetchLike } from "../ingest/crawl/fetch.js";
 import { createDefaultEmbedder, type Embedder } from "../ingest/embed.js";
 import { IngestQueue } from "../ingest/queue.js";
@@ -11,11 +13,13 @@ import { LearnService } from "../learn/service.js";
 import { PackService } from "../packs/service.js";
 import { applyInstalledPackTopics } from "../packs/topics.js";
 import { HybridSearch } from "../retrieve/hybrid.js";
-import { getHomeDir } from "../util/paths.js";
+import { DB_FILENAME, getHomeDir } from "../util/paths.js";
+import type { RequestScope } from "../util/scope.js";
 import { SERVER_NAME, VERSION } from "../version.js";
 import { registerAddMyCourse } from "./prompts/add_my_course.js";
 import { registerExamPrep } from "./prompts/exam_prep.js";
 import { registerExplainWithSources } from "./prompts/explain_with_sources.js";
+import { registerGetStartedPrompt } from "./prompts/get_started.js";
 import { registerQuizMe } from "./prompts/quiz_me.js";
 import { registerQuizMeOnMisses } from "./prompts/quiz_me_on_misses.js";
 import { registerStudySession } from "./prompts/study_session.js";
@@ -25,8 +29,12 @@ import { registerDocumentResource } from "./resources/document.js";
 import { registerMasteryResource } from "./resources/mastery.js";
 import { registerOutlineResource } from "./resources/outline.js";
 import { registerAddCourse } from "./tools/add_course.js";
+import { registerAddCoursePack } from "./tools/add_course_pack.js";
+import { registerAddCourseWebsite } from "./tools/add_course_website.js";
 import { registerAddPack } from "./tools/add_pack.js";
 import { registerAddSource } from "./tools/add_source.js";
+import { registerAddYoutube } from "./tools/add_youtube.js";
+import { registerBrowsePacks } from "./tools/browse_packs.js";
 import { registerCanvasGetPage } from "./tools/canvas_get_page.js";
 import { registerCanvasListAnnouncements } from "./tools/canvas_list_announcements.js";
 import { registerCanvasListAssignments } from "./tools/canvas_list_assignments.js";
@@ -34,6 +42,8 @@ import { registerCanvasListCourses } from "./tools/canvas_list_courses.js";
 import { registerCanvasListFiles } from "./tools/canvas_list_files.js";
 import { registerCanvasListModules } from "./tools/canvas_list_modules.js";
 import { registerCanvasListPages } from "./tools/canvas_list_pages.js";
+import { registerConnectCanvas } from "./tools/connect_canvas.js";
+import { registerConnectLeccap } from "./tools/connect_leccap.js";
 import { registerExportPack } from "./tools/export_pack.js";
 import { registerFetch } from "./tools/fetch.js";
 import { registerGenerateQuizContext } from "./tools/generate_quiz_context.js";
@@ -41,6 +51,7 @@ import { registerGetChunk } from "./tools/get_chunk.js";
 import { registerGetCourseOutline } from "./tools/get_course_outline.js";
 import { registerGetDocument } from "./tools/get_document.js";
 import { registerGetIngestStatus } from "./tools/get_ingest_status.js";
+import { registerGetStarted } from "./tools/get_started.js";
 import { registerGetStudyPlan } from "./tools/get_study_plan.js";
 import { registerGetWeakSpots } from "./tools/get_weak_spots.js";
 import { registerListCourses } from "./tools/list_courses.js";
@@ -54,6 +65,14 @@ import { registerSearchCourse } from "./tools/search_course.js";
 import { registerSetExam } from "./tools/set_exam.js";
 import { registerSetTopics } from "./tools/set_topics.js";
 import { registerSyncCourse } from "./tools/sync_course.js";
+import { registerUploadFiles } from "./tools/upload_files.js";
+
+export type HostedToolContext = {
+  enabled: boolean;
+  publicUrl?: string;
+  userId?: string;
+  signFlow?: (purpose: FlowPurpose) => string;
+};
 
 export type AppContext = {
   opened: OpenedDatabase;
@@ -65,6 +84,8 @@ export type AppContext = {
   allowLocalPaths: boolean;
   allowPrivateNetwork: boolean;
   canvas: CanvasRuntime;
+  hosted?: HostedToolContext;
+  homeDir: string;
 };
 
 export type CreateServerOptions = {
@@ -72,6 +93,8 @@ export type CreateServerOptions = {
   opened?: OpenedDatabase;
   /** Local file/folder sources. False in remote mode unless --allow-path (M9). */
   allowLocalPaths?: boolean;
+  /** Hosted uploads may be ingested from this directory even when local paths are off. */
+  trustedPathPrefix?: string;
   /** Injected embedder (tests). Default is local Transformers.js MiniLM. */
   embedder?: Embedder | null;
   /** Injected clock (tests). */
@@ -88,15 +111,18 @@ export type CreateServerOptions = {
   /** Injected Canvas client / fetch (tests). */
   canvas?: CanvasClient;
   canvasFetch?: FetchLike;
+  hostedTools?: HostedToolContext;
+  scope?: RequestScope;
 };
 
 export function createAppContext(options: CreateServerOptions = {}): AppContext {
-  const opened = options.opened ?? openDatabase({ path: options.dbPath });
+  const homeDir = options.homeDir ?? getHomeDir();
+  const opened =
+    options.opened ?? openDatabase({ path: options.dbPath ?? join(homeDir, DB_FILENAME) });
   const repo = new CourseRepo(opened.db);
   const embedder = options.embedder === undefined ? createDefaultEmbedder() : options.embedder;
   const allowLocalPaths = options.allowLocalPaths ?? true;
   const allowPrivateNetwork = options.allowPrivateNetwork ?? true;
-  const homeDir = options.homeDir ?? getHomeDir();
   const canvas: CanvasRuntime = {
     client: options.canvas,
     fetchFn: options.canvasFetch,
@@ -104,6 +130,7 @@ export function createAppContext(options: CreateServerOptions = {}): AppContext 
   const queue = new IngestQueue({
     repo,
     allowLocalPaths,
+    trustedPathPrefix: options.trustedPathPrefix,
     embedder,
     allowPrivateNetwork,
     crawlDelayMs: options.crawlDelayMs,
@@ -111,6 +138,7 @@ export function createAppContext(options: CreateServerOptions = {}): AppContext 
     youtube: options.youtube,
     canvas: options.canvas,
     canvasFetch: options.canvasFetch,
+    scope: options.scope,
     onSourceDone: async (_sourceId, courseId) => {
       applyInstalledPackTopics(repo, courseId);
     },
@@ -136,6 +164,8 @@ export function createAppContext(options: CreateServerOptions = {}): AppContext 
     allowLocalPaths,
     allowPrivateNetwork,
     canvas,
+    hosted: options.hostedTools,
+    homeDir,
   };
 }
 
@@ -173,12 +203,21 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
   registerAddPack(server, packs);
   registerExportPack(server, packs);
   registerListPacks(server, packs);
+  registerGetStarted(server, ctx);
+  registerConnectCanvas(server, ctx);
+  registerConnectLeccap(server, ctx);
+  registerAddCoursePack(server, packs);
+  registerBrowsePacks(server, packs);
+  registerAddCourseWebsite(server, repo, queue, { allowPrivateNetwork });
+  registerAddYoutube(server, repo, queue, { allowPrivateNetwork });
+  registerUploadFiles(server, ctx);
   registerQuizMeOnMisses(server, learn);
   registerQuizMe(server);
   registerStudySession(server);
   registerExamPrep(server);
   registerExplainWithSources(server);
   registerAddMyCourse(server);
+  registerGetStartedPrompt(server);
   registerWhatsDue(server);
   registerCanvasListCourses(server, repo, canvas);
   registerCanvasListModules(server, canvas);

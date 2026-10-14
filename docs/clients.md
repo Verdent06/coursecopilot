@@ -7,7 +7,7 @@ Until M12 is filled in with screenshots, treat this table as the **intended** su
 | Client | Transport | Install | Status | Notes |
 |---|---|---|---|---|
 | Claude Desktop | stdio | `npx coursecopilot setup` or `.mcpb` | protocol ✅ | JSON + MCPB. Restart the app fully. |
-| claude.ai web / mobile | HTTP | `setup --remote` or a deploy, then Connectors → Custom → Web | protocol ✅ | Public HTTPS. Free plan: 1 custom connector. |
+| claude.ai web / mobile | HTTP | Paste `https://<host>/mcp` → Connectors → Custom → Web → OAuth | protocol ✅ | Public HTTPS. Free plan: 1 custom connector. |
 | Claude Code | stdio | `claude mcp add -s user coursecopilot -- npx -y coursecopilot@latest` | protocol ✅ | Or `npx coursecopilot setup`. |
 | Cursor | stdio | setup, deeplink / badge, or `~/.cursor/mcp.json` | protocol ✅ | |
 | ChatGPT | HTTP | developer mode → Add custom MCP server | protocol ✅ | **Plan-gated.** Pro is read/fetch only; recording a quiz may need Claude/Cursor or Business/Enterprise/Edu. |

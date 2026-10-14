@@ -962,3 +962,18 @@ Chosen while implementing distribution prep (no npm publish, no git tags, no sec
 6. **Release workflow.** `.github/workflows/release.yml` on tag `v*`: `npm publish --provenance --access public` with `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}` and `id-token: write`, attach `.mcpb`, push GHCR. Not run from this PR. Human: create the npm package, set `NPM_TOKEN`, tag `v0.1.0`.
 7. **Docs.** README follows §18 (hero, placeholder GIF, 30s per client, gates, packs, privacy, FAQ). `CONTRIBUTING.md`, issue templates, `CHANGELOG.md`, `docs/tools.md` (generated), `docs/privacy.md`, `docs/architecture.md`, `docs/clients.md` (M12 matrix still pending live vendor passes).
 8. **`ping`.** Kept as a health-check tool (not in the §7.2 product table).
+
+---
+
+## 35. Spec amendments (hosted chat pivot)
+
+Product pivot after a real macOS `node dist/cli.js setup` run and the decision that the primary experience is chat apps via a hosted remote MCP URL.
+
+1. **Setup undo ENOENT.** `recordUndoSession` / `undoLastSetup` call `mkdirSync(homeDir, { recursive: true })` before writing `setup-undo.json`. A first-run setup that only touched `~/.cursor` used to crash at the end because `~/.coursecopilot` did not exist.
+2. **Setup launch command.** `npx -y coursecopilot@latest` is unpublished. `stdioServerSpec()` writes the absolute `process.execPath` + `dist/cli.js` when running from a source checkout (`src/cli.ts` present, not under `node_modules`). Overrides: `COURSECOPILOT_SETUP_NPX=1` (force published), `COURSECOPILOT_SETUP_LOCAL=1` (force local). README badges and MCPB still use the published npx entry.
+3. **Hosted multi-user.** `COURSECOPILOT_HOSTED=1`, `--hosted`, or a PaaS `PORT` enables per-user isolation: OAuth 2.1 + DCR + PKCE binds tokens to `user_id`; each user gets `$COURSECOPILOT_HOME/users/<id>/cc.db` plus secrets and leccap session. Request-scoped `AsyncLocalStorage` so Canvas/leccap path helpers resolve the right home. Process-wide `CANVAS_TOKEN` is ignored inside a hosted user scope.
+4. **Connector URL.** Primary public URL is `https://<host>/mcp`. Landing `/` leads with Add to Claude / ChatGPT / Gemini. Secret-path remains as a weaker single-user option.
+5. **In-chat onboarding.** Tools `get_started`, `connect_canvas`, `connect_leccap`, `add_course_pack`, `browse_packs`, `add_course_website`, `add_youtube`, `upload_files` plus prompt `get_started`. Hosted pages `/connect/canvas`, `/connect/leccap`, `/upload` use short-lived signed flow tokens.
+6. **Leccap hosted limit.** UMich SSO + Duo cannot complete on the server. Practical handoff: paste Playwright storageState / cookies.txt (HttpOnly Shib cookies). Bookmarklet is documented as incomplete. Self-host headed Playwright stays Advanced.
+7. **Rate limits.** In-memory token bucket, `COURSECOPILOT_RATE_LIMIT_RPM` (default 120) on `/mcp`, OAuth token/register, and connect/upload POSTs.
+8. **Existing tools stay.** `add_pack` / `list_packs` / `add_source` remain; the new names are chat-facing aliases/wrappers.

@@ -1,5 +1,5 @@
 import { type Dirent, existsSync, lstatSync, readdirSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
+import { isAbsolute, join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { RepoError } from "../db/repo.js";
 import { FOLDER_FILE_CAP } from "../ingest/config.js";
@@ -29,6 +29,16 @@ export function resolveLocalPath(uri: string): string {
 
 export function toFileUri(absPath: string): string {
   return pathToFileURL(absPath).href;
+}
+
+/** True when `absPath` is the trusted prefix or a file inside it. */
+export function isTrustedPath(absPath: string, prefix?: string): boolean {
+  if (!prefix) {
+    return false;
+  }
+  const root = resolve(prefix);
+  const target = resolve(absPath);
+  return target === root || target.startsWith(root.endsWith(sep) ? root : `${root}${sep}`);
 }
 
 export function assertExists(absPath: string): void {

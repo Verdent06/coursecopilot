@@ -82,8 +82,12 @@ describe("MCP stdio e2e", () => {
     const names = listed.tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "add_course",
+      "add_course_pack",
+      "add_course_website",
       "add_pack",
       "add_source",
+      "add_youtube",
+      "browse_packs",
       "canvas_get_page",
       "canvas_list_announcements",
       "canvas_list_assignments",
@@ -91,6 +95,8 @@ describe("MCP stdio e2e", () => {
       "canvas_list_files",
       "canvas_list_modules",
       "canvas_list_pages",
+      "connect_canvas",
+      "connect_leccap",
       "export_pack",
       "fetch",
       "generate_quiz_context",
@@ -98,6 +104,7 @@ describe("MCP stdio e2e", () => {
       "get_course_outline",
       "get_document",
       "get_ingest_status",
+      "get_started",
       "get_study_plan",
       "get_weak_spots",
       "list_courses",
@@ -111,12 +118,14 @@ describe("MCP stdio e2e", () => {
       "set_exam",
       "set_topics",
       "sync_course",
+      "upload_files",
     ]);
     const prompts = await client.listPrompts();
     expect(prompts.prompts.map((p) => p.name).sort()).toEqual([
       "add_my_course",
       "exam_prep",
       "explain_with_sources",
+      "get_started",
       "quiz_me",
       "quiz_me_on_misses",
       "study_session",

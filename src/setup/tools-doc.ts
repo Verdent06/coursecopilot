@@ -56,7 +56,7 @@ export function renderToolsMarkdown(docs: ToolDoc[]): string {
     "",
     "Resources: `coursecopilot://courses`, `coursecopilot://document/{id}`, `coursecopilot://course/{id}/outline`, `coursecopilot://course/{id}/mastery`.",
     "",
-    "Prompts: `quiz_me_on_misses`, `quiz_me`, `study_session`, `exam_prep`, `explain_with_sources`, `add_my_course`, `whats_due`.",
+    "Prompts: `quiz_me_on_misses`, `quiz_me`, `study_session`, `exam_prep`, `explain_with_sources`, `add_my_course`, `whats_due`, `get_started`.",
     "",
   );
   return lines.join("\n");
