@@ -55,8 +55,8 @@ Ask **get started**. The assistant will offer:
 | `browse_packs` / `add_course_pack` | Public packs (CS50, MIT OCW, …) — links only |
 | `add_course_website` | Crawl a public syllabus site |
 | `add_youtube` | Index captions (timestamps + `youtu.be?t=`) |
-| `connect_canvas` | Opens a **hosted page** — paste Canvas URL + token there, never in chat |
-| `connect_leccap` | UMich lecture capture via a hosted cookie-handoff page |
+| `connect_canvas` | Calendar feed first (no token), then the browser extension, then an optional personal token |
+| `connect_leccap` | Same extension (no cookie copy); cookie paste remains a fallback |
 | `upload_files` | Hosted upload page for PDF / PPTX / MD / TXT |
 
 Then: **quiz me on what I missed.**
@@ -88,7 +88,7 @@ Image: `ghcr.io/verdent06/coursecopilot` (on version tags). Dockerfile at the re
 | `COURSECOPILOT_PUBLIC_URL` | `https://<app>.onrender.com` or `https://<app>.fly.dev` (OAuth issuer) |
 | `COURSECOPILOT_SESSION_SECRET` | Signs connect/upload links and the library cookie |
 | Optional `COURSECOPILOT_TOKEN` | Admin bearer / secret-path for your own debugging |
-| Do **not** set a shared `CANVAS_TOKEN` on a multi-user host | Each user pastes their own token on the connect page |
+| Do **not** set a shared `CANVAS_TOKEN` on a multi-user host | Each user connects via ICS / extension / their own token |
 
 After deploy, open `https://<host>/` and paste `https://<host>/mcp` into Claude / ChatGPT / Gemini.
 
@@ -101,16 +101,22 @@ Details: [docs/remote.md](docs/remote.md).
 | **Files** | PDF (per-page), PPTX (slides + notes), Markdown, TXT — via the upload page in chat |
 | **Websites** | robots.txt, same-site crawl, linked PDFs/PPTX |
 | **YouTube** | Captions with timestamps |
-| **UMich lecture capture** | Cookie handoff (see limits below) |
-| **Canvas** | Read-only: courses, files, modules, pages, assignments + due dates, announcements |
+| **UMich lecture capture** | Browser extension (session APIs) or cookie handoff |
+| **Canvas** | Works **without** a personal token: ICS calendar feed (due dates) + optional MV3 extension (full read) |
 | **Course packs** | One-line `add_course_pack harvard-cs50x`. Links only — no copyrighted content |
 | **Quizzes / weak spots** | Host AI writes questions from cited chunks; we record attempts |
 
 ## Canvas and lecture capture (in chat)
 
-`connect_canvas` returns a link. Create a token at Canvas → Account → Settings → Approved Integrations → + New Access Token. It is stored only in **your** library on the host (`secrets.json`, 0600). If your school blocks tokens: use a website, a pack, or the upload page. [docs/canvas.md](docs/canvas.md).
+`connect_canvas` — many schools (including UMich) **block student access tokens**. You do not need one:
 
-`connect_leccap` is a **cookie handoff**. UMich Weblogin + Duo cannot run on the server. Practical path: export cookies from a signed-in `leccap.engin.umich.edu` tab (Cookie-Editor → Playwright storageState or `cookies.txt`, including HttpOnly `umich.edu` cookies) and paste them on the hosted page. A bookmarklet only sees non-HttpOnly cookies and is often not enough. [docs/leccap.md](docs/leccap.md).
+1. **Calendar feed (zero setup).** Canvas → Calendar → Calendar Feed → paste the ICS URL on the hosted page (never in chat). Due dates across every course.
+2. **Browser extension (full read).** Install [CourseCopilot Sync](extension/README.md) (Chrome / Edge / Firefox, MV3). Pair it with the one-time code from chat while signed into Canvas via SSO. Read-only; you click Sync.
+3. **Personal token (optional)** if Account → Settings still shows + New Access Token.
+
+[docs/canvas.md](docs/canvas.md).
+
+`connect_leccap` uses the **same extension** for captions + slide timeline (product / webvtt APIs, no cookie copying). Cookie paste remains a fallback. [docs/leccap.md](docs/leccap.md).
 
 ## Browse packs
 
@@ -192,7 +198,9 @@ Troubleshooting: `node dist/cli.js doctor`. Native module errors: `npm rebuild b
 
 **Do I need a terminal?** Not for the primary path. Deploy (or use someone’s deploy), paste `https://<host>/mcp`, then stay in chat.
 
-**Will my Canvas token leak?** On a host you do not control, the operator can read the volume. Prefer your own Render/Fly instance. Tokens are never in packs or logs.
+**My school blocks Canvas tokens.** That is the default path now: calendar feed (due dates) or the browser extension (full read). A personal token is optional.
+
+**Will my Canvas token / calendar feed leak?** On a host you do not control, the operator can read the volume. Prefer your own Render/Fly instance. Secrets are never in packs or logs. The extension never uploads cookies.
 
 **ChatGPT Free/Plus?** Unknown. You need a plan with developer mode.
 

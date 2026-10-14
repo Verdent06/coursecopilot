@@ -17,6 +17,6 @@ export function hostedPageLink(
   }
   return {
     url: null,
-    hint: "This session is local/stdio. Deploy CourseCopilot (see the README) and paste https://<host>/mcp into Claude/ChatGPT/Gemini so these links appear in chat. Advanced: `npx coursecopilot canvas connect` / `login leccap`.",
+    hint: "This session is local/stdio. Deploy CourseCopilot (see the README) and paste https://<host>/mcp into Claude/ChatGPT/Gemini so the calendar-feed page, pairing code, and extension links appear in chat. Advanced: `npx coursecopilot canvas connect --ics-url <feed>` / `login leccap`.",
   };
 }

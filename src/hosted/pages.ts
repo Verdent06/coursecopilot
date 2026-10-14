@@ -1,16 +1,19 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { canvasConnectionStatus } from "../canvas/auth.js";
 import { connectCanvas } from "../canvas/connect.js";
 import { parseCookieFile, saveSession } from "../ingest/lecture-capture/session.js";
 import { newId } from "../util/ids.js";
 import { runWithScope } from "../util/scope.js";
 import { type FlowPayload, type FlowPurpose, verifyFlowToken } from "./flow.js";
+import type { PairingStore } from "./pairing.js";
 import type { UserStore } from "./users.js";
 
 export type PageDeps = {
   origin: string;
   sessionSecret: string;
   users: UserStore;
+  pairing?: PairingStore;
   /** Resolve or create the AppContext for a hosted user. */
   contextFor: (userId: string) => {
     repo: { addCourse: (input: { title: string; course_id?: string }) => { course_id: string } };
@@ -88,7 +91,7 @@ export function landingHtml(origin: string, hosted: boolean): string {
 
   <section>
     <h2>Then, in chat</h2>
-    <p>Ask: <strong>get started</strong>. CourseCopilot will offer <code>connect_canvas</code>, course packs, a website, YouTube, or a file-upload link — all without a terminal.</p>
+    <p>Ask: <strong>get started</strong>. CourseCopilot will offer <code>connect_canvas</code> (calendar feed first — no token), course packs, a website, YouTube, or a file-upload link — all without a terminal.</p>
   </section>
 
   ${
@@ -144,26 +147,57 @@ async function canvasPage(request: Request, url: URL, deps: PageDeps): Promise<R
   if (flow instanceof Response) {
     return flow;
   }
+  const homeDir = deps.users.userHome(flow.userId);
+  const pairing = deps.pairing?.issueOrReuse(flow.userId);
   if (request.method === "GET") {
+    const status = runWithScope({ userId: flow.userId, homeDir, allowEnvSecrets: false }, () =>
+      canvasConnectionStatus(),
+    );
+    const connectedNote = status.connected
+      ? `<p>Already connected via ${escapeHtml(status.via.join(", "))}. You can replace a feed or token below.</p>`
+      : "";
+    const codeBlock = pairing
+      ? `<p>Pairing code (one-time, ~15 min): <code class="code">${escapeHtml(pairing.code)}</code></p>
+         <p class="muted">Host: <code>${escapeHtml(deps.origin)}</code></p>`
+      : "";
     return htmlPage(
       "Connect Canvas",
       `<h1>Connect Canvas</h1>
-      <p>Create a token at Canvas → Account → Settings → Approved Integrations → <strong>+ New Access Token</strong>. It is stored only in <em>your</em> library on this server (mode 0600), never in packs or logs.</p>
+      ${connectedNote}
+      <p>Many schools — including UMich — <strong>block student access tokens</strong>. You do not need one.</p>
+
+      <h2>1. Calendar feed (no install)</h2>
+      <p>In Canvas: <strong>Calendar → Calendar Feed</strong> (bottom of the calendar). Copy the ICS URL. That feed is every due date across your courses.</p>
       <form method="post">
-        <label>Canvas URL<br/><input name="base_url" required placeholder="https://umich.instructure.com" style="width:100%"/></label>
-        <label>Personal access token<br/><input name="token" required type="password" autocomplete="off" style="width:100%"/></label>
-        <p><button type="submit">Save and verify</button></p>
+        <input type="hidden" name="intent" value="ics"/>
+        <label>Calendar feed URL<br/><input name="ics_url" required placeholder="https://umich.instructure.com/feeds/calendars/user_….ics" style="width:100%"/></label>
+        <p><button type="submit">Save calendar feed</button></p>
       </form>
-      <p class="muted">If your school blocks student tokens, use a public course website, a pack, or the upload page instead.</p>`,
+
+      <h2>2. Browser extension (full read)</h2>
+      <p>Install the open-source <a href="/extension">CourseCopilot Sync</a> extension (Chrome / Edge / Firefox). Stay signed into Canvas via SSO. Paste this host and the pairing code, then click Sync. Read-only; you start every sync.</p>
+      ${codeBlock}
+
+      <h2>3. Personal access token (optional)</h2>
+      <p>Only if your school still shows Account → Settings → Approved Integrations → <strong>+ New Access Token</strong>.</p>
+      <form method="post">
+        <input type="hidden" name="intent" value="pat"/>
+        <label>Canvas URL<br/><input name="base_url" placeholder="https://umich.instructure.com" style="width:100%"/></label>
+        <label>Personal access token<br/><input name="token" type="password" autocomplete="off" style="width:100%"/></label>
+        <p><button type="submit">Save and verify token</button></p>
+      </form>
+      <p class="muted">Tokens and feed URLs stay in <em>your</em> library (mode 0600), never in packs or logs.</p>`,
     );
   }
   if (request.method !== "POST") {
     return htmlPage("Method not allowed", "<p>POST required.</p>", 405);
   }
   const form = await readForm(request);
-  const homeDir = deps.users.userHome(flow.userId);
+  const icsUrl = form.ics_url?.trim();
   const result = await runWithScope({ userId: flow.userId, homeDir, allowEnvSecrets: false }, () =>
-    connectCanvas({ baseUrl: form.base_url, token: form.token, yes: true }),
+    icsUrl
+      ? connectCanvas({ icsUrl, yes: true, allowPrivateNetwork: false })
+      : connectCanvas({ baseUrl: form.base_url, token: form.token, yes: true }),
   );
   if (!result.ok) {
     return htmlPage(
@@ -171,9 +205,10 @@ async function canvasPage(request: Request, url: URL, deps: PageDeps): Promise<R
       `<h1>Could not connect</h1><p>${escapeHtml(result.message)}</p>`,
     );
   }
+  const via = result.via === "ics" ? "calendar feed" : "personal token";
   return htmlPage(
     "Canvas connected",
-    `<h1>Canvas connected</h1><p>Signed in as ${escapeHtml(result.name)} on ${escapeHtml(result.baseUrl)}.</p><p>Return to chat and ask to list your Canvas courses or add one.</p>`,
+    `<h1>Canvas connected</h1><p>Saved ${escapeHtml(via)} for ${escapeHtml(result.name)} (${escapeHtml(result.baseUrl)}).</p><p>Return to chat and ask what’s due${result.via === "ics" ? "" : " or to list Canvas courses"}.</p>`,
   );
 }
 
@@ -188,8 +223,10 @@ async function leccapPage(request: Request, url: URL, deps: PageDeps): Promise<R
     return htmlPage(
       "Connect lecture capture",
       `<h1>Connect UMich Lecture Capture</h1>
-      <p>UMich Weblogin + Duo cannot run on this server. The practical path is a <strong>cookie handoff</strong> from a browser where you already signed in.</p>
-      <h2>Option A — paste an export (recommended)</h2>
+      <p>UMich Weblogin + Duo cannot run on this server. You stay signed in in <em>your</em> browser.</p>
+      <h2>Recommended — browser extension (no cookie copying)</h2>
+      <p>Install <a href="/extension">CourseCopilot Sync</a>, pair it with the one-time code from <code>connect_leccap</code> / <code>connect_canvas</code>, open a signed-in leccap tab, and Sync. The extension reads captions and the slide timeline from the product / webvtt APIs with your session. Cookies never leave the browser.</p>
+      <h2>Option B — paste an export</h2>
       <p>In a signed-in tab on <code>leccap.engin.umich.edu</code>, use a cookie-export extension (Cookie-Editor, etc.) and paste Playwright <code>storageState</code> JSON or Netscape <code>cookies.txt</code>. Include <code>umich.edu</code> / Shibboleth cookies; many of those are HttpOnly so a bookmarklet cannot see them.</p>
       <form method="post">
         <textarea name="cookies" rows="10" style="width:100%" placeholder='{"cookies":[{"name":"...","value":"...","domain":".umich.edu"}]}'></textarea>
@@ -346,6 +383,7 @@ function htmlPage(title: string, body: string, status = 200): Response {
   input, textarea { margin: .35rem 0 1rem; padding: .4rem; }
   .muted { opacity: .8; font-size: .95rem; }
   code { word-break: break-all; }
+  code.code { font-size: 1.25rem; letter-spacing: .06em; }
 </style></head><body>${body}</body></html>`;
   return new Response(html, {
     status,

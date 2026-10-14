@@ -1,0 +1,28 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Instructure Inc//canvas-lms-calendar//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Canvas Calendar
+BEGIN:VEVENT
+DTSTART:20261020T235900Z
+DTEND:20261021T000000Z
+UID:event-assignment-101@umich.instructure.com
+SUMMARY:Homework 3 [EECS 376]
+URL:https://umich.instructure.com/courses/101/assignments/9
+DESCRIPTION:Due: Oct 20
+END:VEVENT
+BEGIN:VEVENT
+DTSTART:20261015T155900Z
+DTEND:20261015T160000Z
+UID:event-assignment-102@umich.instructure.com
+SUMMARY:Quiz 2 [EECS 376]
+URL:https://umich.instructure.com/courses/101/assignments/10
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20261102
+UID:event-assignment-103@umich.instructure.com
+SUMMARY:Project proposal [ENGR 100]
+URL:https://umich.instructure.com/courses/202/assignments/3
+END:VEVENT
+END:VCALENDAR

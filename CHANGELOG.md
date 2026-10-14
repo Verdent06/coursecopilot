@@ -12,6 +12,7 @@ First public npm / GitHub Release will be **0.1.0** (tag `v0.1.0`). This changel
 ### Added
 
 - Hosted remote MCP: `https://<host>/mcp` with OAuth 2.1 (DCR + PKCE), per-user SQLite, landing page (“Add to Claude / ChatGPT / Gemini”), in-chat `get_started` / `connect_canvas` / `connect_leccap` / packs / website / YouTube / upload page, rate limits, `COURSECOPILOT_HOSTED=1` on Docker/Fly/Render.
+- Canvas without a student PAT (UMich and similar): calendar ICS feed (due dates), MV3 CourseCopilot Sync extension (session REST + CSRF, pairing code), optional personal token. Same extension syncs UMich leccap captions/slides without cookie copying.
 - MCP server (stdio + Streamable HTTP) with course DB, hybrid search, and citations (M0–M3).
 - Ingest: local files/folders, course websites, YouTube captions, VTT/SRT, UMich CAEN lecture capture, read-only Canvas (M2, M4–M6, leccap).
 - Course packs, in-repo registry, and 15 starter packs (M7, M11).

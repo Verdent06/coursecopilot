@@ -7,16 +7,16 @@ export const CANVAS_ERROR = {
 export type CanvasErrorCode = (typeof CANVAS_ERROR)[keyof typeof CANVAS_ERROR];
 
 export const CANVAS_FALLBACK =
-  "If your school disabled personal access tokens (no “+ New Access Token” button under Account → Settings → Approved Integrations), CourseCopilot cannot talk to Canvas. Use a public course website (`add_source` kind=website), a course pack (`add-pack`), or download files in the browser and add the folder (`add_source` kind=folder).";
+  "Many schools (including UMich) block student personal access tokens. You do not need one. Tier 1: Canvas → Calendar → Calendar Feed — paste the ICS URL on the connect_canvas page (due dates across every course). Tier 2: install the CourseCopilot browser extension, pair it with the one-time code from chat, and Sync while signed into Canvas. Tier 3: a personal token, only if your school still shows “+ New Access Token.” You can also add a public course website, a course pack, or upload files.";
 
 export const TOKEN_REJECTED_HINT =
-  "Canvas returned 401. Your token may be expired or revoked. Create a new one at Account → Settings → Approved Integrations → “+ New Access Token.”";
+  "Canvas returned 401. Your token may be expired or revoked. Prefer the calendar feed or the browser extension (connect_canvas). Or create a new token at Account → Settings → Approved Integrations → “+ New Access Token” if your school allows it.";
 
 export const TOKENS_BLOCKED_HINT =
-  "This Canvas instance rejected personal access tokens (403 or a school policy error). The “+ New Access Token” button is often missing when the school blocks them.";
+  "This Canvas instance rejected personal access tokens (403 or a school policy error). The “+ New Access Token” button is often missing when the school blocks them. Use the calendar feed or the browser extension instead — call connect_canvas.";
 
 export const NOT_CONFIGURED_HINT =
-  "Canvas is not configured. Run `coursecopilot canvas connect` (or set CANVAS_BASE_URL and CANVAS_TOKEN on this machine). The token stays in ~/.coursecopilot/secrets.json (0600) or the process env — never the database, packs, or client configs.";
+  "Canvas is not configured. Call connect_canvas: first paste the Calendar → Calendar Feed ICS URL (no token). For courses, modules, pages, and files, pair the browser extension. A personal token is optional and only works if your school allows it.";
 
 export type CanvasErrorPayload = {
   error: CanvasErrorCode;

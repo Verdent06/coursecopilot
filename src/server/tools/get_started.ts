@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
+import { canvasConnectionStatus } from "../../canvas/auth.js";
 import { hostedPageLink } from "../hosted-link.js";
 import type { AppContext } from "../index.js";
 import { fail, ok } from "../tool-result.js";
@@ -49,7 +50,7 @@ export function registerGetStarted(server: McpServer, ctx: AppContext): void {
             "Offer browse_packs (try harvard-cs50x) or add_course_website with their syllabus URL.",
           );
           next.push(
-            "If they use Canvas, call connect_canvas and ask them to open the returned link.",
+            "If they use Canvas, call connect_canvas. Guide the Calendar → Calendar Feed ICS URL first (no token). Many schools block student tokens.",
           );
           next.push(
             "If they have lecture PDFs, call upload_files and ask them to open the upload link.",
@@ -66,7 +67,7 @@ export function registerGetStarted(server: McpServer, ctx: AppContext): void {
         const payload = {
           new_user: newUser,
           courses: courses.map((c) => c.course_id),
-          canvas_connected: false,
+          canvas_connected: canvasConnectionStatus().connected,
           next_steps: next,
           canvas_url: canvas.url,
           leccap_url: leccap.url,

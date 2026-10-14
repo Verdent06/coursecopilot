@@ -28,8 +28,8 @@ export function registerGetStartedPrompt(server: McpServer): void {
                 "Help me set up CourseCopilot. I should never need a terminal.\n" +
                 extra +
                 "1. Call get_started.\n" +
-                "2. If they have no courses, offer browse_packs (suggest harvard-cs50x), add_course_website, add_youtube, connect_canvas (open the returned link — never ask for the token in chat), or upload_files.\n" +
-                "3. UMich lecture recordings: connect_leccap, then add_source kind leccap.\n" +
+                "2. If they have no courses, offer browse_packs (suggest harvard-cs50x), add_course_website, add_youtube, connect_canvas (Calendar feed first — never ask for a token or ICS URL in chat), or upload_files.\n" +
+                "3. UMich lecture recordings: connect_leccap (browser extension, no cookie copy), then add_source kind leccap.\n" +
                 "4. After ingest, call get_course_outline and ask for exam dates before set_exam.\n" +
                 "5. Then offer quiz_me_on_misses or search_course with citations.",
             },

@@ -166,30 +166,35 @@ program
     await runLoginCommand(provider, opts);
   });
 
-const canvas = program.command("canvas").description("Canvas LMS (read-only, your own token)");
+const canvas = program
+  .command("canvas")
+  .description("Canvas LMS (read-only: calendar feed, browser extension, or optional token)");
 
 canvas
   .command("connect")
   .description(
-    "Validate a personal access token and store it in ~/.coursecopilot/secrets.json (0600). Never written to the DB, packs, or client configs.",
+    "Connect Canvas via a calendar ICS feed (no token) or an optional personal access token. Stored in ~/.coursecopilot/secrets.json (0600). Never written to the DB, packs, or client configs.",
   )
   .option("--base-url <url>", "Canvas instance URL, e.g. https://umich.instructure.com")
-  .option("--token <token>", "Personal access token (Account → Settings → Approved Integrations)")
-  .option("-y, --yes", "Non-interactive (requires --base-url and --token)")
-  .action(async (opts: { baseUrl?: string; token?: string; yes?: boolean }) => {
+  .option("--token <token>", "Personal access token (only if your school still allows them)")
+  .option("--ics-url <url>", "Canvas Calendar → Calendar Feed ICS URL (due dates, no token)")
+  .option("-y, --yes", "Non-interactive (requires --ics-url or --base-url and --token)")
+  .action(async (opts: { baseUrl?: string; token?: string; icsUrl?: string; yes?: boolean }) => {
     const result = await connectCanvas({
       baseUrl: opts.baseUrl,
       token: opts.token,
+      icsUrl: opts.icsUrl,
       yes: Boolean(opts.yes),
     });
     if (!result.ok) {
       process.stderr.write(`${result.message}\n`);
       process.exit(1);
     }
+    const what = result.via === "ics" ? "Calendar feed stored" : `Connected as ${result.name}`;
     process.stderr.write(
-      `✓ Connected as ${result.name} (${result.baseUrl})\n` +
-        `Token stored in ${result.secretsPath} (mode 0600). ` +
-        "It is never written to the database, packs, logs, or client configs.\n",
+      `✓ ${what} (${result.baseUrl})\n` +
+        `Saved in ${result.secretsPath} (mode 0600). ` +
+        "Never written to the database, packs, logs, or client configs.\n",
     );
     process.exit(0);
   });

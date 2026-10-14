@@ -10,8 +10,10 @@ import {
   requireBearerAuth,
 } from "@modelcontextprotocol/server";
 import { handleHostedPage, landingHtml } from "../hosted/pages.js";
+import { PairingStore } from "../hosted/pairing.js";
 import { clientKey, RateLimiter } from "../hosted/rate-limit.js";
 import { LOCAL_USER_ID, UserContextCache } from "../hosted/runtime.js";
+import { handleSyncApi } from "../hosted/sync-api.js";
 import { UserStore } from "../hosted/users.js";
 import {
   isMcpEndpoint,
@@ -70,6 +72,7 @@ export async function startHttpServer(opts: HttpServeOptions): Promise<HttpServe
   const sessionSecret =
     opts.sessionSecret || process.env.COURSECOPILOT_SESSION_SECRET || opts.token || randomToken(24);
   const users = hosted ? new UserStore(processHome) : undefined;
+  const pairing = new PairingStore(processHome);
   const rateLimitRpm = opts.rateLimitRpm ?? Number(process.env.COURSECOPILOT_RATE_LIMIT_RPM || 120);
   const limiter = new RateLimiter(Number.isFinite(rateLimitRpm) ? rateLimitRpm : 120);
 
@@ -118,6 +121,7 @@ export async function startHttpServer(opts: HttpServeOptions): Promise<HttpServe
     hosted,
     users,
     sessionSecret,
+    pairing,
     limiter,
     processHome,
   };
@@ -155,6 +159,7 @@ export async function startHttpServer(opts: HttpServeOptions): Promise<HttpServe
       processHome,
       publicUrl: origin,
       sessionSecret,
+      pairing,
       base: { ...opts, allowLocalPaths, allowPrivateNetwork, ctx: undefined },
     });
     route.userCache = userCache;
@@ -203,6 +208,7 @@ type RouteOpts = {
   users?: UserStore;
   userCache?: UserContextCache;
   sessionSecret?: string;
+  pairing?: PairingStore;
   limiter?: RateLimiter;
   processHome?: string;
 };
@@ -249,12 +255,25 @@ export async function handleHttpRequest(request: Request, opts: RouteOpts): Prom
     }
   }
 
+  if (opts.pairing) {
+    const sync = await handleSyncApi(request, {
+      origin: opts.publicUrl?.replace(/\/+$/, "") || requestOrigin(request),
+      pairing: opts.pairing,
+      users: opts.users,
+      processHome: opts.processHome ?? getHomeDir(),
+    });
+    if (sync) {
+      return cors(sync);
+    }
+  }
+
   if (opts.hosted && opts.users && opts.userCache && opts.sessionSecret) {
     const origin = opts.publicUrl?.replace(/\/+$/, "") || requestOrigin(request);
     const page = await handleHostedPage(request, {
       origin,
       sessionSecret: opts.sessionSecret,
       users: opts.users,
+      pairing: opts.pairing,
       contextFor: (userId) => {
         const ctx = opts.userCache?.get(userId);
         if (!ctx) {
@@ -469,7 +488,8 @@ function shouldRateLimit(path: string, method: string): boolean {
     path.startsWith("/connect/") ||
     path === "/upload" ||
     path === "/register" ||
-    path === "/token"
+    path === "/token" ||
+    path.startsWith("/api/")
   );
 }
 

@@ -1,7 +1,13 @@
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { saveCanvasIcsUrl } from "../../src/canvas/auth.js";
 import { TtlCache } from "../../src/canvas/cache.js";
 import { CanvasClient } from "../../src/canvas/client.js";
 import { CANVAS_ERROR } from "../../src/canvas/errors.js";
+import { saveCanvasSnapshot } from "../../src/canvas/snapshot.js";
 import {
   getLivePage,
   listLiveAnnouncements,
@@ -18,11 +24,17 @@ import { openMemory } from "../helpers/memory-db.js";
 describe("Canvas live tools", () => {
   const closers: Array<() => void> = [];
 
+  const homes: string[] = [];
+
   afterEach(() => {
     delete process.env.CANVAS_TOKEN;
     delete process.env.CANVAS_BASE_URL;
+    delete process.env.CANVAS_ICS_URL;
     for (const close of closers.splice(0)) {
       close();
+    }
+    for (const home of homes.splice(0)) {
+      rmSync(home, { recursive: true, force: true });
     }
   });
 
@@ -102,7 +114,73 @@ describe("Canvas live tools", () => {
     expect(opened.ok).toBe(false);
     if (!opened.ok) {
       expect(opened.error.error).toBe(CANVAS_ERROR.notConfigured);
-      expect(opened.error.fallback).toMatch(/canvas connect/i);
+      expect(opened.error.fallback).toMatch(/connect_canvas|canvas connect/i);
     }
+  });
+
+  it("lists assignments from an ICS feed when no token is set", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "cc-ics-tools-"));
+    homes.push(dir);
+    process.env.COURSECOPILOT_HOME = dir;
+    saveCanvasIcsUrl("https://umich.instructure.com/feeds/calendars/user_abc.ics");
+    const ics = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../fixtures/canvas/calendar.ics"),
+      "utf8",
+    );
+    const fetchFn = (async () =>
+      new Response(ics, {
+        status: 200,
+        headers: { "content-type": "text/calendar" },
+      })) as typeof fetch;
+    const assignments = await listLiveAssignments(
+      { fetchFn, cache: new TtlCache(30_000) },
+      { upcomingOnly: true, days: 14, now: new Date("2026-10-13T12:00:00.000Z") },
+    );
+    expect(assignments.some((a) => a.name === "Homework 3" && a.course === "EECS 376")).toBe(true);
+  });
+
+  it("lists courses and pages from an extension snapshot", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "cc-snap-tools-"));
+    homes.push(dir);
+    process.env.COURSECOPILOT_HOME = dir;
+    const { opened, repo } = openMemory();
+    closers.push(() => opened.db.close());
+    saveCanvasSnapshot({
+      version: 1,
+      synced_at: new Date().toISOString(),
+      courses: [{ id: 101, name: "EECS 376", course_code: "EECS376" }],
+      modules: { "101": [{ id: 1, name: "Week 1", items: [] }] },
+      pages: {
+        "101": [
+          {
+            url: "syllabus",
+            title: "Syllabus",
+            body: "<p>Office hours</p>",
+            html_url: "https://umich.instructure.com/courses/101/pages/syllabus",
+          },
+        ],
+      },
+      files: { "101": [] },
+      assignments: {
+        "101": [
+          {
+            id: 9,
+            name: "HW1",
+            due_at: "2026-10-20T23:59:00Z",
+            html_url: "https://umich.instructure.com/courses/101/assignments/9",
+          },
+        ],
+      },
+      announcements: [],
+    });
+    const courses = await listLiveCourses({}, repo, false);
+    expect(courses.some((c) => c.canvas_course_id === "101")).toBe(true);
+    const page = await getLivePage({}, "101", "syllabus");
+    expect(page.body_markdown).toMatch(/Office hours/i);
+    const due = await listLiveAssignments(
+      {},
+      { upcomingOnly: true, days: 14, now: new Date("2026-10-13T12:00:00.000Z") },
+    );
+    expect(due.some((a) => a.name === "HW1")).toBe(true);
   });
 });

@@ -72,6 +72,7 @@ export type HostedToolContext = {
   publicUrl?: string;
   userId?: string;
   signFlow?: (purpose: FlowPurpose) => string;
+  createPairingCode?: () => { code: string; expiresAt: number };
 };
 
 export type AppContext = {

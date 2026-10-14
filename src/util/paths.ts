@@ -27,6 +27,16 @@ export function getSecretsPath(): string {
   return join(getHomeDir(), SECRETS_FILENAME);
 }
 
+/** Extension-synced Canvas REST snapshot (no personal token). Mode 0600. */
+export function getCanvasSnapshotPath(): string {
+  return join(getHomeDir(), "canvas-snapshot.json");
+}
+
+/** Extension-synced leccap product/webvtt snapshot. Mode 0600. */
+export function getLeccapSnapshotPath(): string {
+  return join(getHomeDir(), "leccap-snapshot.json");
+}
+
 /**
  * Transformers.js filesystem cache. Matches the CI cache path
  * `~/.cache/huggingface` (and HF_HOME / TRANSFORMERS_CACHE when set).

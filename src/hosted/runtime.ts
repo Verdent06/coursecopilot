@@ -3,6 +3,7 @@ import { type AppContext, type CreateServerOptions, createAppContext } from "../
 import { DB_FILENAME } from "../util/paths.js";
 import type { RequestScope } from "../util/scope.js";
 import { signFlowToken } from "./flow.js";
+import type { PairingStore } from "./pairing.js";
 import type { UserStore } from "./users.js";
 
 export const LOCAL_USER_ID = "local";
@@ -12,6 +13,7 @@ export type HostedRuntimeOptions = {
   processHome: string;
   publicUrl: string;
   sessionSecret: string;
+  pairing?: PairingStore;
   base: CreateServerOptions;
 };
 
@@ -27,6 +29,7 @@ export class UserContextCache {
     }
     const homeDir =
       userId === LOCAL_USER_ID ? this.opts.processHome : this.opts.users.userHome(userId);
+    const pairing = this.opts.pairing;
     const scope: RequestScope = {
       userId,
       homeDir,
@@ -48,6 +51,7 @@ export class UserContextCache {
         publicUrl: this.opts.publicUrl,
         userId,
         signFlow: (purpose) => signFlowToken(this.opts.sessionSecret, { userId, purpose }),
+        createPairingCode: pairing ? () => pairing.issueOrReuse(userId) : undefined,
       },
     });
     this.map.set(userId, ctx);

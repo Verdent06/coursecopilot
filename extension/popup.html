@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>CourseCopilot Sync</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>CourseCopilot Sync</h1>
+    <p class="lede">
+      Read-only. You stay signed into Canvas / leccap the normal way. Nothing is sent until you click
+      Pair or Sync. Cookies never leave this browser.
+    </p>
+
+    <label>CourseCopilot host</label>
+    <input id="host" type="url" placeholder="https://your-host.example" autocomplete="off" />
+
+    <label>One-time pairing code</label>
+    <input id="code" type="text" placeholder="ABCD-EFGH" autocomplete="off" spellcheck="false" />
+
+    <div class="row">
+      <button id="pair" type="button">Pair</button>
+      <button id="sync-canvas" type="button">Sync Canvas</button>
+      <button id="sync-leccap" type="button">Sync leccap</button>
+    </div>
+
+    <p id="status" class="status">Not paired. Call <code>connect_canvas</code> in chat for a code.</p>
+    <script src="popup.js"></script>
+  </body>
+</html>

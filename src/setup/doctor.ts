@@ -1,11 +1,12 @@
 import { createRequire } from "node:module";
-import { loadCanvasCredentials } from "../canvas/auth.js";
+import { canvasConnectionStatus, loadCanvasCredentials } from "../canvas/auth.js";
 import { CanvasClient } from "../canvas/client.js";
 import { CanvasApiError } from "../canvas/errors.js";
 import { openDatabase } from "../db/migrate.js";
 import type { FetchLike } from "../ingest/crawl/fetch.js";
 import { createDefaultEmbedder, type Embedder } from "../ingest/embed.js";
 import { loadSession } from "../ingest/lecture-capture/session.js";
+import { loadLeccapSnapshot } from "../ingest/lecture-capture/snapshot.js";
 import { RegistryClient } from "../packs/registry.js";
 import { EMBED_MODEL_ID } from "../retrieve/config.js";
 import { getDbPath } from "../util/paths.js";
@@ -325,13 +326,22 @@ function checkClients(ctx: SetupContext): DoctorCheck[] {
 
 async function checkCanvas(fetchFn?: FetchLike): Promise<DoctorCheck> {
   const creds = loadCanvasCredentials();
+  const status = canvasConnectionStatus();
+  if (!creds && status.connected) {
+    return {
+      id: "canvas",
+      name: "Canvas",
+      status: "pass",
+      message: `connected via ${status.via.join(", ")} (no personal token)`,
+    };
+  }
   if (!creds) {
     return {
       id: "canvas",
       name: "Canvas",
       status: "skip",
       message: "not configured",
-      fix: "npx coursecopilot canvas connect   (optional; never stored in client configs)",
+      fix: "connect_canvas (calendar feed first) or `npx coursecopilot canvas connect --ics-url <feed>`",
     };
   }
   try {
@@ -355,13 +365,22 @@ async function checkCanvas(fetchFn?: FetchLike): Promise<DoctorCheck> {
       name: "Canvas",
       status: "fail",
       message: detail,
-      fix: "Create a new token at Account → Settings → Approved Integrations, then `canvas connect`",
+      fix: "Use the calendar feed or browser extension (connect_canvas), or a new token if the school allows it",
     };
   }
 }
 
 function checkLeccap(): DoctorCheck {
   const session = loadSession("leccap");
+  const snapshot = loadLeccapSnapshot();
+  if (snapshot && snapshot.recordings.length > 0) {
+    return {
+      id: "leccap",
+      name: "leccap session",
+      status: "pass",
+      message: `extension snapshot (${snapshot.recordings.length} recording(s))`,
+    };
+  }
   if (!session) {
     return {
       id: "leccap",

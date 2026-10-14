@@ -38,7 +38,7 @@ export function registerCanvasListCourses(
     {
       title: "Canvas: list courses",
       description:
-        "List active Canvas courses for the configured personal access token. Read-only. Returns a graceful error if the token is missing, rejected, or blocked by the school.",
+        "List active Canvas courses (personal token or the browser-extension snapshot). Read-only. Returns a graceful error if Canvas is not connected; a calendar feed alone is due dates only.",
       inputSchema: canvasListCoursesInputSchema,
       outputSchema: canvasListCoursesOutputSchema,
       annotations: {

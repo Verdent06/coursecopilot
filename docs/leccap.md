@@ -8,16 +8,23 @@ You never download the video. CourseCopilot never stores your UMich password.
 
 ## Hosted / in-chat (no terminal)
 
-Call `connect_leccap` in Claude / ChatGPT / Gemini. It returns a link to `/connect/leccap` on the same host.
+Call `connect_leccap` in Claude / ChatGPT / Gemini.
 
-**Limit:** UMich Weblogin + Duo cannot run on the server. The practical handoff is a **cookie export** from a browser where you already signed in:
+**Preferred — same browser extension as Canvas (no cookie copying):**
 
-1. Open [leccap.engin.umich.edu](https://leccap.engin.umich.edu) and complete Duo.
-2. Export cookies with an extension (Cookie-Editor, etc.) as Playwright `storageState` JSON or Netscape `cookies.txt`. Include HttpOnly cookies for `umich.edu` / Shibboleth — a bookmarklet cannot see those.
+1. Install [CourseCopilot Sync](../extension/README.md) (Chrome / Edge / Firefox).
+2. Pair it with the one-time code from `connect_leccap` / `connect_canvas`.
+3. Open a signed-in [leccap.engin.umich.edu](https://leccap.engin.umich.edu) site or player tab (SSO + Duo in *your* browser).
+4. Click **Sync leccap**. The extension reads captions and the slide timeline from `/player/api/product/` and `/player/api/webvtt/` with your session. Cookies stay in the browser.
+5. Back in chat, `add_source` with `kind: "leccap"` and the site or player URL. Ingest uses the snapshot and does not need a cookie file.
+
+**Fallback — cookie export** on `/connect/leccap`:
+
+1. Open leccap and complete Duo.
+2. Export cookies (Cookie-Editor → Playwright `storageState` or `cookies.txt`), including HttpOnly `umich.edu` / Shibboleth cookies.
 3. Paste the export on the hosted page.
-4. Back in chat, `add_source` with `kind: "leccap"` and the site or player URL.
 
-The bookmarklet on that page is a fallback for non-HttpOnly cookies and often fails after Duo. Self-host Advanced (headed Playwright) is below.
+A bookmarklet only sees non-HttpOnly cookies and often fails after Duo. Self-host Advanced (headed Playwright) is below.
 
 ## One-minute setup (local laptop)
 

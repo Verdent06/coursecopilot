@@ -110,7 +110,67 @@ describe("hosted OAuth user isolation", () => {
 
     const page = await fetch(body.canvas_url ?? "");
     expect(page.ok).toBe(true);
-    expect(await page.text()).toMatch(/Connect Canvas/);
+    const pageHtml = await page.text();
+    expect(pageHtml).toMatch(/Connect Canvas/);
+    expect(pageHtml).toMatch(/Calendar Feed/);
+    expect(pageHtml).toMatch(/browser extension/i);
+
+    const ext = await fetch(`${origin}/extension`);
+    expect(ext.ok).toBe(true);
+    expect(await ext.text()).toMatch(/user-initiated/);
+
+    const startedCanvas = await clientB.callTool({ name: "connect_canvas", arguments: {} });
+    expect(startedCanvas.isError).toBeFalsy();
+    const canvasBody = startedCanvas.structuredContent as {
+      pairing_code: string | null;
+      instructions: string;
+    };
+    expect(canvasBody.pairing_code).toMatch(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/);
+    expect(canvasBody.instructions).toMatch(/Calendar/i);
+
+    const pair = await fetch(`${origin}/api/pair`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code: canvasBody.pairing_code }),
+    });
+    expect(pair.ok).toBe(true);
+    const paired = (await pair.json()) as { sync_token: string };
+    expect(paired.sync_token).toMatch(/^cc_sync_/);
+
+    const sync = await fetch(`${origin}/api/sync/canvas`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${paired.sync_token}`,
+      },
+      body: JSON.stringify({
+        version: 1,
+        courses: [{ id: 42, name: "EECS 376", course_code: "EECS376" }],
+        modules: {},
+        pages: {},
+        files: {},
+        assignments: {
+          "42": [
+            {
+              id: 1,
+              name: "Homework 3",
+              due_at: "2026-10-20T23:59:00Z",
+              html_url: "https://umich.instructure.com/courses/42/assignments/1",
+            },
+          ],
+        },
+        announcements: [],
+      }),
+    });
+    expect(sync.ok).toBe(true);
+
+    const due = await clientB.callTool({
+      name: "canvas_list_assignments",
+      arguments: { upcoming_only: false },
+    });
+    expect(due.isError).toBeFalsy();
+    const dueBody = due.structuredContent as { assignments: Array<{ name: string }> };
+    expect(dueBody.assignments.some((a) => a.name === "Homework 3")).toBe(true);
 
     expect(readdirSync(join(home, "users")).length).toBeGreaterThanOrEqual(2);
   });
