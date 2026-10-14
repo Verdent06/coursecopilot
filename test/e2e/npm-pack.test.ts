@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -6,12 +5,9 @@ import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { afterEach, describe, expect, it } from "vitest";
+import { runNpm } from "../helpers/run-npm.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
-
-function npmBin(): string {
-  return process.platform === "win32" ? "npm.cmd" : "npm";
-}
 
 function spawnEnv(home: string): Record<string, string> {
   const env: Record<string, string> = {};
@@ -50,16 +46,12 @@ describe.skipIf(!runNpxTarball)("npx from packed tarball", () => {
   it("answers MCP initialize and tools/list", async () => {
     const packDir = mkdtempSync(join(tmpdir(), "cc-npm-pack-"));
     leftovers.push(packDir);
-    execFileSync(npmBin(), ["pack", "--pack-destination", packDir, "--ignore-scripts"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-    });
+    runNpm(["pack", "--pack-destination", packDir, "--ignore-scripts"], { cwd: repoRoot });
     const tarball = join(packDir, "coursecopilot-0.1.0.tgz");
     const prefix = mkdtempSync(join(tmpdir(), "cc-npx-prefix-"));
     leftovers.push(prefix);
-    execFileSync(npmBin(), ["install", "--prefix", prefix, tarball], {
+    runNpm(["install", "--prefix", prefix, tarball], {
       cwd: packDir,
-      encoding: "utf8",
       env: spawnEnv(prefix),
     });
     const home = mkdtempSync(join(tmpdir(), "cc-npx-home-"));

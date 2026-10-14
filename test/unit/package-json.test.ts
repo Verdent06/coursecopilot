@@ -1,8 +1,8 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { runNpm } from "../helpers/run-npm.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -12,10 +12,6 @@ type PackListing = {
   filename: string;
   files: Array<{ path: string }>;
 };
-
-function npmBin(): string {
-  return process.platform === "win32" ? "npm.cmd" : "npm";
-}
 
 describe("npm package metadata", () => {
   it("is ready to publish as coursecopilot", () => {
@@ -47,10 +43,7 @@ describe("npm package metadata", () => {
   });
 
   it("npm pack dry-run only ships dist, README, and LICENSE", () => {
-    const raw = execFileSync(npmBin(), ["pack", "--dry-run", "--json", "--ignore-scripts"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-    });
+    const raw = runNpm(["pack", "--dry-run", "--json", "--ignore-scripts"], { cwd: repoRoot });
     const jsonStart = raw.search(/[[{]/);
     const parsed = JSON.parse(jsonStart >= 0 ? raw.slice(jsonStart) : raw) as
       | PackListing
