@@ -2,7 +2,13 @@ import { readFileSync, statSync } from "node:fs";
 import { basename } from "node:path";
 import type { CourseRepo } from "../../db/repo.js";
 import { RepoError } from "../../db/repo.js";
-import { assertExists, resolveLocalPath, toFileUri, walkFiles } from "../../util/files.js";
+import {
+  assertExists,
+  isTrustedPath,
+  resolveLocalPath,
+  toFileUri,
+  walkFiles,
+} from "../../util/files.js";
 import { FOLDER_FILE_CAP, MAX_FILE_BYTES } from "../config.js";
 import { sha256 } from "../hash.js";
 import { mimeForPath, supportedKind } from "../mime.js";
@@ -18,6 +24,7 @@ export type ProgressFn = (progress: number, message: string, skipped: SkipReason
 export type FileIngestContext = {
   repo: CourseRepo;
   allowLocalPaths: boolean;
+  trustedPathPrefix?: string;
 };
 
 export async function ingestFileSource(
@@ -25,18 +32,17 @@ export async function ingestFileSource(
   sourceId: string,
   onProgress: ProgressFn = () => undefined,
 ): Promise<IngestResult> {
-  if (!ctx.allowLocalPaths) {
-    throw new RepoError(
-      "Local file paths are disabled unless --allow-path is set (remote mode). Use a website, pack, or Canvas source instead.",
-    );
-  }
-
   const source = ctx.repo.getSource(sourceId);
   if (!source) {
     throw new RepoError(`Unknown source_id "${sourceId}"`);
   }
 
   const abs = resolveLocalPath(source.uri);
+  if (!ctx.allowLocalPaths && !isTrustedPath(abs, ctx.trustedPathPrefix)) {
+    throw new RepoError(
+      "Local file paths are disabled unless --allow-path is set (remote mode). Use a website, pack, Canvas, or the in-chat upload page instead.",
+    );
+  }
   assertExists(abs);
   const st = statSync(abs);
   const cfg = parseSourceConfig(source.config_json);

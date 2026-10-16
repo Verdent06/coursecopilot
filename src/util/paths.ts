@@ -1,10 +1,18 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { getRequestScope } from "./scope.js";
 
 export const DB_FILENAME = "cc.db";
 
-/** Data directory: COURSECOPILOT_HOME, else ~/.coursecopilot */
+/**
+ * Data directory: request-scoped user home (hosted multi-user), else
+ * COURSECOPILOT_HOME, else ~/.coursecopilot.
+ */
 export function getHomeDir(): string {
+  const scoped = getRequestScope()?.homeDir;
+  if (scoped) {
+    return scoped;
+  }
   return process.env.COURSECOPILOT_HOME ?? join(homedir(), ".coursecopilot");
 }
 
@@ -17,6 +25,16 @@ export function getDbPath(): string {
 /** Local secrets file (Canvas token). Mode 0600. Never the DB. */
 export function getSecretsPath(): string {
   return join(getHomeDir(), SECRETS_FILENAME);
+}
+
+/** Extension-synced Canvas REST snapshot (no personal token). Mode 0600. */
+export function getCanvasSnapshotPath(): string {
+  return join(getHomeDir(), "canvas-snapshot.json");
+}
+
+/** Extension-synced leccap product/webvtt snapshot. Mode 0600. */
+export function getLeccapSnapshotPath(): string {
+  return join(getHomeDir(), "leccap-snapshot.json");
 }
 
 /**

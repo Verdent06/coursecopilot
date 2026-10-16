@@ -1,8 +1,10 @@
-# Remote / HTTP mode (M9)
+# Remote / HTTP mode
 
-CourseCopilot is local-first. Claude Desktop, Claude Code, Cursor, and Gemini CLI
-talk to it over **stdio**. Three clients can only reach a server from *their*
-cloud, so they need a public Streamable HTTP URL:
+**Primary path:** deploy CourseCopilot and paste `https://<host>/mcp` into Claude, ChatGPT, or Gemini. Users never need a terminal. The landing page at `/` repeats these instructions.
+
+Hosted mode (`COURSECOPILOT_HOSTED=1`, default in the Docker image) is multi-user: OAuth 2.1 + Dynamic Client Registration + PKCE, one isolated SQLite library per person under `/data/users/<id>/`.
+
+Claude Desktop, Claude Code, Cursor, and Gemini CLI can still talk over **stdio** (see README → Advanced). Three clients can only reach a server from *their* cloud, so they need this public URL:
 
 | Client | Why remote? |
 |---|---|

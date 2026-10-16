@@ -1,8 +1,15 @@
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { loadCanvasCredentials, saveCanvasCredentials } from "../../src/canvas/auth.js";
+import {
+  canvasConnectionStatus,
+  loadCanvasCredentials,
+  loadCanvasIcsUrl,
+  saveCanvasCredentials,
+  saveCanvasIcsUrl,
+} from "../../src/canvas/auth.js";
 import { connectCanvas } from "../../src/canvas/connect.js";
 import { normalizeCanvasBaseUrl, parseCanvasCourseId } from "../../src/canvas/uri.js";
 import {
@@ -115,6 +122,40 @@ describe("Canvas auth + connect", () => {
     if (!expired.ok) {
       expect(expired.message).toMatch(/401|expired|revoked/i);
     }
+  });
+
+  it("saves an ICS feed without wiping an existing token", () => {
+    home();
+    saveCanvasCredentials({ baseUrl: "https://umich.instructure.com", token: "keep-me" });
+    saveCanvasIcsUrl("https://umich.instructure.com/feeds/calendars/user_abc.ics");
+    expect(loadCanvasIcsUrl()).toBe("https://umich.instructure.com/feeds/calendars/user_abc.ics");
+    expect(loadCanvasCredentials()?.token).toBe("keep-me");
+    expect(canvasConnectionStatus().via).toEqual(["pat", "ics"]);
+  });
+
+  it("connects via ICS without a token", async () => {
+    home();
+    const ics = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../fixtures/canvas/calendar.ics"),
+      "utf8",
+    );
+    const fetchFn = (async () =>
+      new Response(ics, {
+        status: 200,
+        headers: { "content-type": "text/calendar" },
+      })) as typeof fetch;
+    const ok = await connectCanvas({
+      icsUrl: "https://umich.instructure.com/feeds/calendars/user_abc.ics",
+      yes: true,
+      fetchFn,
+    });
+    expect(ok.ok).toBe(true);
+    if (ok.ok) {
+      expect(ok.via).toBe("ics");
+      expect(ok.name).toBe("calendar feed");
+    }
+    expect(loadCanvasCredentials()).toBeNull();
+    expect(loadCanvasIcsUrl()).toContain("user_abc.ics");
   });
 
   it("does not treat a leftover world-readable file as a place to keep writing tokens without chmod", () => {

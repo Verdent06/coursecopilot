@@ -27,8 +27,8 @@ export function registerWhatsDue(server: McpServer): void {
               text:
                 `What's due in the next ${window} days?\n` +
                 `1. Call canvas_list_assignments with upcoming_only=true and days=${window}. ` +
-                "If it returns canvas_not_configured, token_rejected, or tokens_blocked, tell the student the fallback " +
-                "(public course website, a course pack, or download files and add a folder) and stop.\n" +
+                "If it returns canvas_not_configured, token_rejected, or tokens_blocked, call connect_canvas: " +
+                "guide Calendar → Calendar Feed (ICS, no token) first, then the browser extension, then a personal token only if the school allows it. Do not stop at website/pack/folder unless they refuse Canvas.\n" +
                 `2. Call canvas_list_announcements with since_days=${window}.\n` +
                 "3. Group assignments and announcements by course. Show due dates (ISO and local) and Canvas links.\n" +
                 "4. If a nearby exam exists (set_exam, or a Canvas assignment named Midterm/Exam/Final), " +

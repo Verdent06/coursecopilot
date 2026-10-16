@@ -1,10 +1,10 @@
 # Privacy and local-first
 
-CourseCopilot is software you run. There is no central hosted service, no telemetry, and no CourseCopilot account.
+CourseCopilot is software someone runs (you, or a classmate who deployed it). There is no telemetry from this repo. A **hosted** deploy (`COURSECOPILOT_HOSTED=1`) creates a CourseCopilot *library* per OAuth user (`/data/users/<id>/`). The operator of that machine can read the volume — deploy your own if that is not acceptable.
 
 ## What stays on your machine
 
-- The SQLite index (`~/.coursecopilot/cc.db`, override with `COURSECOPILOT_HOME`)
+- The SQLite index (`~/.coursecopilot/cc.db` locally, or `$COURSECOPILOT_HOME/users/<id>/cc.db` when hosted)
 - Quiz attempts, topic mastery, and study-plan inputs
 - Canvas token (`~/.coursecopilot/secrets.json` mode 0600, or `CANVAS_TOKEN` in that process's environment)
 - Lecture-capture session cookies (`~/.coursecopilot/leccap-session.json`) after `login leccap`
@@ -20,7 +20,7 @@ Nothing is uploaded to a CourseCopilot server. We do not operate one.
 
 ## Remote / HTTP mode
 
-`coursecopilot serve --http` and one-click deploys (Render / Fly / Railway / Cloudflare Containers) are **your** instance. Canvas tokens, if set, stay in that instance's env. Do not paste a Canvas token into a server someone else runs. Packs never include Canvas or leccap credentials.
+`coursecopilot serve --http --hosted` and one-click deploys (Render / Fly / Railway) isolate each OAuth user. Do not set a shared `CANVAS_TOKEN` on a multi-user host; each student pastes their own token on `/connect/canvas`. Packs never include Canvas or leccap credentials. Secret-path URLs (`/mcp/<token>`) share the operator “local” library and are weaker than OAuth.
 
 Secret-path URLs (`/mcp/<token>`) are weaker than bearer/OAuth: anyone with the URL can use the MCP tools. Prefer a deploy you control and rotate the token.
 

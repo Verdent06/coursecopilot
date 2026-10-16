@@ -1,0 +1,60 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  width: 320px;
+  margin: 0;
+  padding: 12px 14px 16px;
+  line-height: 1.4;
+}
+
+h1 {
+  font-size: 1.05rem;
+  margin: 0 0 0.4rem;
+}
+
+.lede {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin: 0 0 0.8rem;
+}
+
+label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0.2rem 0 0.4rem;
+  padding: 0.4rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.6rem 0;
+}
+
+button {
+  flex: 1;
+  min-width: 5.5rem;
+  padding: 0.45rem 0.4rem;
+  cursor: pointer;
+}
+
+.status {
+  font-size: 0.8rem;
+  margin: 0.4rem 0 0;
+  white-space: pre-wrap;
+}
+
+code {
+  font-size: 0.85em;
+}

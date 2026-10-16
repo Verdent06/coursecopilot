@@ -19,10 +19,13 @@ WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
+COPY extension ./extension
 ENV NODE_ENV=production
 ENV COURSECOPILOT_HOME=/data
 ENV HF_HOME=/data/hf
 ENV PORT=8787
+ENV COURSECOPILOT_HOSTED=1
+ENV COURSECOPILOT_BIND=0.0.0.0
 EXPOSE 8787
 VOLUME ["/data"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8787)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"

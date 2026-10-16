@@ -3,6 +3,7 @@ import { RepoError } from "../../db/repo.js";
 import { ingestLectureCaptureSource } from "../lecture-capture/ingest.js";
 import { loadOcr } from "../lecture-capture/ocr.js";
 import { loadSession, SESSION_EXPIRED_MESSAGE } from "../lecture-capture/session.js";
+import { loadLeccapSnapshot, overlayLeccapSnapshot } from "../lecture-capture/snapshot.js";
 import type { OcrFn } from "../lecture-capture/types.js";
 import { SessionExpiredError } from "../lecture-capture/types.js";
 import { LECCAP_PROVIDER, requireLeccapSession } from "../providers/leccap/auth.js";
@@ -64,11 +65,21 @@ export async function ingestLeccapSource(
 }
 
 function createClientFromSession(skipSession: boolean): LeccapClient {
+  const snapshot = loadLeccapSnapshot();
   if (skipSession) {
-    return createLeccapClient({ session: loadSession(LECCAP_PROVIDER) });
+    return overlayLeccapSnapshot(
+      createLeccapClient({ session: loadSession(LECCAP_PROVIDER) }),
+      snapshot,
+    );
+  }
+  if (snapshot && snapshot.recordings.length > 0) {
+    return overlayLeccapSnapshot(
+      createLeccapClient({ session: loadSession(LECCAP_PROVIDER) }),
+      snapshot,
+    );
   }
   const session = requireLeccapSession();
-  return createLeccapClient({ session });
+  return overlayLeccapSnapshot(createLeccapClient({ session }), snapshot);
 }
 
 function ocrFromConfig(configJson: string | null): boolean {

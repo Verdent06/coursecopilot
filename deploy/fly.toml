@@ -14,6 +14,7 @@ primary_region = "iad"
   HF_HOME = "/data/hf"
   PORT = "8787"
   COURSECOPILOT_BIND = "0.0.0.0"
+  COURSECOPILOT_HOSTED = "1"
 
 [http_service]
   internal_port = 8787

@@ -7,15 +7,21 @@ The host AI generates answers, quiz questions, and plans. CourseCopilot only fet
 | Tool | Title | RO | Role |
 |---|---|---|---|
 | `add_course` | Add course | no | Create a course. Returns the course_id slug used by later tools. |
+| `add_course_pack` | Add course pack | no | Install a shareable course pack by registry id (for example harvard-cs50x), URL, or path. Same as add_pack: links and a topic map only, no copyrighted files. Poll get_ingest_status with the job_ids. |
+| `add_course_website` | Add course website | no | Crawl a public course website (robots.txt, same-site, linked PDFs/PPTX) into a course. Creates the course if needed. Poll get_ingest_status. |
 | `add_pack` | Add pack | no | Install a course pack (links + topic map only, no copyrighted content). Resolves a registry id, URL, or path; creates the course; enqueues each source; applies the lecture→topic map. Poll get_ingest_status with the returned job_ids. |
 | `add_source` | Add source | no | Enqueue a course source for ingestion. website crawls a public course site (robots, same-site crawl, linked PDFs/PPTX). File/folder index local PDF, PPTX, Markdown, and TXT. youtube fetches captions (timestamps + youtu.be deep links). transcript indexes a local or remote VTT/SRT. canvas (uri canvas://course/<id>) ingests pages, files, modules, assignments, and announcements with a local Canvas token. leccap indexes UMich CAEN Lecture Capture (sign in first with `coursecopilot login leccap`). Returns a job_id; poll get_ingest_status. |
+| `add_youtube` | Add YouTube | no | Index YouTube captions (timestamps + youtu.be deep links) for a video or playlist. Creates a course if needed. Poll get_ingest_status. |
+| `browse_packs` | Browse packs | yes | List public course packs (CS50, MIT OCW, Stanford notes, …) and which are already installed. Same as list_packs. Then call add_course_pack with an id. |
 | `canvas_get_page` | Canvas: get page | yes | Fetch a Canvas wiki page and return its body as Markdown. Read-only. |
 | `canvas_list_announcements` | Canvas: list announcements | yes | List recent Canvas announcements (live, short-cached). Omit canvas_course_id to cover every active course. |
 | `canvas_list_assignments` | Canvas: list assignments | yes | List assignments and due dates from Canvas (live, short-cached). Omit canvas_course_id to cover every active course. Default: upcoming in the next 14 days. |
-| `canvas_list_courses` | Canvas: list courses | yes | List active Canvas courses for the configured personal access token. Read-only. Returns a graceful error if the token is missing, rejected, or blocked by the school. |
+| `canvas_list_courses` | Canvas: list courses | yes | List active Canvas courses (personal token or the browser-extension snapshot). Read-only. Returns a graceful error if Canvas is not connected; a calendar feed alone is due dates only. |
 | `canvas_list_files` | Canvas: list files | yes | List files in a Canvas course. If the course files API is 403 (common for students), files are collected from module items instead. |
 | `canvas_list_modules` | Canvas: list modules | yes | List modules and items for a Canvas course. Read-only live API. |
 | `canvas_list_pages` | Canvas: list pages | yes | List wiki pages in a Canvas course. Use canvas_get_page for the body. |
+| `connect_canvas` | Connect Canvas | yes | Connect Canvas without a personal token when the school blocks them (UMich and many others). Guide the calendar ICS feed first (due dates), then the browser extension (full read via the signed-in session), then a personal token only if the school still allows it. Do not ask them to paste a token or ICS URL into this chat. After they finish, list assignments or courses. |
+| `connect_leccap` | Connect lecture capture | yes | Attach UMich CAEN Lecture Capture without copying cookies. Prefer the CourseCopilot Sync browser extension (same pairing code as Canvas) while signed into leccap via SSO/Duo; it reads captions and the slide timeline from the product/webvtt APIs. Cookie paste remains a fallback. After sync, add_source kind leccap with the site URL. |
 | `export_pack` | Export pack | yes | Create a pack manifest from a local course (links and topic map only). Drops Canvas, login-gated lecture-capture (leccap), and local files, and may include a connect_yourself placeholder so classmates attach those themselves. |
 | `fetch` | Fetch | yes | Fetch the full text of a search result. ChatGPT-compatible alias of get_chunk. Pass the id returned by search (a chunk id) or a document_id. |
 | `generate_quiz_context` | Generate quiz context | yes | Return source chunks grouped by topic plus question-writing instructions. Write questions from the chunks only, cite chunk_ids, then call record_quiz_attempt after grading. Read-only: Pro/ChatGPT can use this without write tools. |
@@ -23,6 +29,7 @@ The host AI generates answers, quiz questions, and plans. CourseCopilot only fet
 | `get_course_outline` | Get course outline | yes | List documents grouped by source, lectures in order, and topics. Propose better topic names via set_topics if the heuristic list looks off. |
 | `get_document` | Get document | yes | Return the full extracted text of a document, with per-chunk citations (page or slide). |
 | `get_ingest_status` | Get ingest status | yes | Poll ingestion job progress, document/chunk counts, and skipped URLs. |
+| `get_started` | Get started | yes | Onboarding for a new student. Returns whether they have courses, and the next in-chat steps (connect Canvas, browse packs, add a website or YouTube, or open an upload link). Call this first when the user is new or asks how to begin. |
 | `get_study_plan` | Get study plan | yes | Return a deterministic day-by-day study plan. Topics are ranked by weakness × exam listing. The last day is a mixed exam simulation. Format this as a checklist for the student. |
 | `get_weak_spots` | Get weak spots | yes | Return the weakest topics for a course, with mastery, uncertainty, and two suggested cited chunks each. Use this before generate_quiz_context(focus:'weak'). |
 | `list_courses` | List courses | yes | List all courses stored locally, with source/chunk counts and exams. |
@@ -36,7 +43,8 @@ The host AI generates answers, quiz questions, and plans. CourseCopilot only fet
 | `set_exam` | Set exam | no | Add or replace an exam date on a course. Same name updates the existing exam. |
 | `set_topics` | Set topics | no | Create or update topic labels for a course. Optionally bind chunk_ids or keywords. Origin is recorded as host. |
 | `sync_course` | Sync course | no | Re-fetch course sources incrementally. Unchanged documents (content hash or ETag) skip re-embedding. Optional source_id limits the sync to one source. |
+| `upload_files` | Upload files | yes | Return a hosted browser upload page for PDF, PPTX, Markdown, or TXT. Use this instead of local file paths when talking over Claude/ChatGPT/Gemini. After upload, poll get_ingest_status. |
 
 Resources: `coursecopilot://courses`, `coursecopilot://document/{id}`, `coursecopilot://course/{id}/outline`, `coursecopilot://course/{id}/mastery`.
 
-Prompts: `quiz_me_on_misses`, `quiz_me`, `study_session`, `exam_prep`, `explain_with_sources`, `add_my_course`, `whats_due`.
+Prompts: `quiz_me_on_misses`, `quiz_me`, `study_session`, `exam_prep`, `explain_with_sources`, `add_my_course`, `whats_due`, `get_started`.

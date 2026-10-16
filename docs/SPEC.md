@@ -18,7 +18,7 @@
 | Transports | **stdio** for local clients (Claude Desktop, Claude Code, Cursor, Gemini CLI). **Streamable HTTP** (`coursecopilot serve --http`) for claude.ai web/mobile, ChatGPT, and the Gemini app (Spark custom apps). Both ship before launch. |
 | Install | `npx coursecopilot setup` detects **every local client it can find** (Claude Desktop, Claude Code, Cursor, Gemini CLI) and writes each config after backing it up. For web clients it prints the public URL to paste (or offers `--remote` to start a tunnel). `npx coursecopilot doctor` checks the install. Manual fallbacks: Cursor deeplink, Claude Desktop `.mcpb`, JSON snippets. |
 | Client support | **All of these must work before launch:** Claude Desktop, claude.ai web, Claude Code, Cursor, ChatGPT (developer mode; plan-gated), Gemini CLI, and the Gemini app via Gemini Spark custom apps (eligibility-gated, §3.2). |
-| Canvas (v1) | Read-only Canvas integration at canvas-mcp level: courses, files, modules, pages, assignments + due dates, announcements. Uses **your own personal access token**, local only. If the school blocks tokens, it fails gracefully and points to manual export / website / packs. Own milestone (M6), after crawler + YouTube and before launch. |
+| Canvas (v1) | Read-only Canvas integration at canvas-mcp level: courses, files, modules, pages, assignments + due dates, announcements. **Works without a personal token:** Tier 1 calendar ICS feed (due dates), Tier 2 MV3 browser extension (session REST + CSRF), Tier 3 optional PAT if the school allows it. Own milestone (M6), after crawler + YouTube and before launch. |
 | Course packs (core v1) | A pack is a small JSON/YAML manifest: course id/name/term, source URLs, and a lecture → topic map. It contains **no copyrighted content**. `npx coursecopilot add-pack <id\|url\|path>` downloads the materials from their original sources onto your machine and builds the index. `export-pack` creates a pack from a local course. Public registry: **in this repo** (`packs/index.json` + `packs/<id>.json`), with 10–20 starter packs for public courses. |
 | Cut from v1 | Canvas writes, Canvas OAuth / multi-user hosting, Google AI Studio (no MCP client exists, §3.2), and polish on the exam planner. |
 | Remote mode | **Required for launch** (M9), self-hosted. `coursecopilot serve --http` with a bearer token or secret URL path, made public through `coursecopilot tunnel` (Cloudflare quick tunnel) or a one-click deploy (Fly.io / Render / Cloudflare Containers templates). No central hosted service in v1. |
@@ -42,7 +42,7 @@
 - **Course packs** (§9.7): `add-pack` / `export-pack` / `list-packs` from the CLI and as MCP tools, a public registry repo with a JSON schema and validation CI, and 10–20 starter packs.
 - **Auto-setup for every local client**: `coursecopilot setup` detects and configures Claude Desktop, Claude Code, Cursor, and Gemini CLI (backing up each config first). For web clients (claude.ai, ChatGPT, Gemini app) it prints the exact URL and click path. `coursecopilot doctor` checks every detected client (§12).
 - Add a course. Ingest from: (a) a public course website URL (crawled within limits), (b) local PDFs/PPTX/Markdown/TXT files and folders, (c) YouTube links (captions only), (d) VTT/SRT transcripts, (e) **Canvas** (see below).
-- **Canvas integration (read-only, canvas-mcp-level)** (§3.6, §9.2): list active courses; ingest and search files, modules, pages, front page, assignment descriptions, and announcements; expose assignments with due dates and announcements as live tools. Personal access token from env or a 0600 secrets file. If tokens are blocked or rejected, it fails gracefully with a clear message and fallback paths.
+- **Canvas integration (read-only, canvas-mcp-level)** (§3.6, §9.2, §35): list active courses; ingest and search files, modules, pages, front page, assignment descriptions, and announcements; expose assignments with due dates and announcements as live tools. Three connect tiers: ICS calendar feed, browser-extension session sync, optional personal access token. If a token is blocked, ICS + extension still work.
 - Hybrid search (keyword + vector) with citations to page, slide, URL anchor, timestamp, or Canvas item.
 - Quiz support. The server hands back source chunks and a quiz scaffold, the host AI writes the questions, and the server records attempts.
 - Topic extraction (heuristic) and weak-spot tracking per topic.
@@ -114,7 +114,7 @@ Possible upgrade: `bge-small-en-v1.5` (also 384-dim) for better retrieval qualit
 
 ### 3.6 Canvas API token flow (v1, milestone M6)
 - A student creates a token at **Canvas → Account → Settings → Approved Integrations → "+ New Access Token"**, then sets `CANVAS_BASE_URL` (e.g. `https://umich.instructure.com`) and `CANVAS_TOKEN`. The API also exposes token creation via `POST /api/v1/users/:user_id/tokens` ([Canvas access tokens](https://documentation.instructure.com/doc/api/access_tokens.html)).
-- **Policy caveat:** Canvas docs say asking other users to manually generate a token for your application violates the API policy, and multi-user apps MUST use OAuth ([Canvas OAuth2](https://documentation.instructure.com/doc/api/file.oauth.html)). Our framing: CourseCopilot is software *you* run locally with *your own* token, not a service that collects tokens. We never accept Canvas tokens in hosted mode run by someone else. Some schools disable student tokens **[risk]**. Expect that: `canvas connect` detects the failure (no "New Access Token" button, 401/403 on `/users/self`) and prints a graceful fallback: use the course website, a pack, or download files and add them as a folder.
+- **Policy caveat:** Canvas docs say asking other users to manually generate a token for your application violates the API policy, and multi-user apps MUST use OAuth ([Canvas OAuth2](https://documentation.instructure.com/doc/api/file.oauth.html)). Hosted CourseCopilot does **not** depend on student PATs. UMich and many schools hide “+ New Access Token.” `connect_canvas` leads with the Calendar Feed ICS URL, then a user-installed MV3 extension that calls the Canvas REST API from the signed-in browser (same-origin + CSRF) and POSTs a snapshot to that user’s library. A personal token remains optional for schools that still allow it. Token / ICS secrets stay in the user’s 0600 `secrets.json`, never the DB or packs.
 - **Setup:** `coursecopilot canvas connect` asks for the base URL and token, validates it, and stores it in env/`~/.coursecopilot/secrets.json` (0600). The token is never written to client configs, the DB, logs, or packs.
 - Endpoints to use: `GET /api/v1/courses?enrollment_state=active`, `/courses/:id/modules?include[]=items`, `/courses/:id/pages`, `/pages/:url`, `/courses/:id/files` (may be 403 for students; if so, get files via module items), `/courses/:id/assignments`, `/courses/:id/front_page`, `/courses/:id/assignment_groups` (for exam weights), `/courses/:id/assignments?bucket=upcoming` and `/users/self/upcoming_events` (due dates), `/announcements?context_codes[]=course_:id` (announcements). Capability target is parity with canvas-mcp's student read tools (courses, files, modules, pages, assignments + due dates, announcements), read-only. Follow `Link: rel="next"` for pagination and respect `X-Rate-Limit-Remaining`.
 
@@ -426,9 +426,9 @@ Edge cases:
 - Pagination
 - Throttling (`X-Rate-Limit-Remaining` < 50 → slow down)
 - Media comments: skip
-- Tokens blocked by the school / no token UI: `tokens_blocked` error with fallback steps (never a crash or stack trace)
+- Tokens blocked by the school / no token UI: `tokens_blocked` on the PAT path; `connect_canvas` then uses the ICS feed and/or the browser extension (never a crash or stack trace)
 - Announcements and assignment descriptions: HTML → Markdown, indexed as `canvas` documents with `canvas.item_type` `announcement`/`assignment`
-- Remote mode: Canvas tools work only if `CANVAS_TOKEN` is set on that self-hosted instance
+- Remote / hosted: no process-wide `CANVAS_TOKEN`. Each user connects via ICS, the extension, or their own token on `/connect/canvas`.
 
 ### 9.3 Files (PDF / PPTX / DOCX / MD / TXT / folder)
 - PDF: per-page text via unpdf; locator `{path|url, page}`. Scanned PDFs (under 20 chars/page on most pages): mark `needs_ocr`; OCR is out of scope for v1.
@@ -707,7 +707,7 @@ Pre-seed one earlier quiz attempt (`scripts/demo-seed.ts`) so "what I missed" ha
 |---|---|
 | **ChatGPT access is gated** (dev mode plans; Pro = read/fetch only per the OpenAI Help Center) and needs a public URL | Core Q&A and quiz-generation tools are read-only. Document that quiz *recording* may need Claude/Cursor, or a Business plan. Test in M9 and the M12 matrix (launch-blocking). Keep the `search`/`fetch` aliases. |
 | Spec 2026-07-28 / SDK v2 adoption by clients may lag | Keep the transport behind an adapter; fall back to SDK v1.x if a smoke test fails. |
-| Canvas tokens blocked by school / Canvas API policy | v1 read-only, your own token, self-run only; `tokens_blocked` graceful error + fallbacks (website, packs, folder); never stored in DB/packs/configs. |
+| Canvas tokens blocked by school / Canvas API policy | ICS calendar feed + MV3 session extension so Canvas works without a PAT; optional token still supported; secrets never stored in DB/packs/configs. |
 | Canvas scope creep (grades, writes, discussions) | Fixed read list (courses, files, modules, pages, assignments + due dates, announcements); everything else post-v1. |
 | Launch gated on 7 clients, some outside our control | Matrix in M12; a client fails only if it's our bug. If a vendor gate blocks testing (e.g. no Spark access, ChatGPT plan), document it as ⚠️ with the vendor limit rather than slip the launch, and Vedant decides. |
 | Web clients need OAuth instead of secret-path URLs | Probe in M9; if required, single-user OAuth with DCR moves into M9. |
@@ -962,3 +962,21 @@ Chosen while implementing distribution prep (no npm publish, no git tags, no sec
 6. **Release workflow.** `.github/workflows/release.yml` on tag `v*`: `npm publish --provenance --access public` with `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}` and `id-token: write`, attach `.mcpb`, push GHCR. Not run from this PR. Human: create the npm package, set `NPM_TOKEN`, tag `v0.1.0`.
 7. **Docs.** README follows §18 (hero, placeholder GIF, 30s per client, gates, packs, privacy, FAQ). `CONTRIBUTING.md`, issue templates, `CHANGELOG.md`, `docs/tools.md` (generated), `docs/privacy.md`, `docs/architecture.md`, `docs/clients.md` (M12 matrix still pending live vendor passes).
 8. **`ping`.** Kept as a health-check tool (not in the §7.2 product table).
+
+---
+
+## 35. Spec amendments (hosted chat pivot)
+
+Product pivot after a real macOS `node dist/cli.js setup` run and the decision that the primary experience is chat apps via a hosted remote MCP URL.
+
+1. **Setup undo ENOENT.** `recordUndoSession` / `undoLastSetup` call `mkdirSync(homeDir, { recursive: true })` before writing `setup-undo.json`. A first-run setup that only touched `~/.cursor` used to crash at the end because `~/.coursecopilot` did not exist.
+2. **Setup launch command.** `npx -y coursecopilot@latest` is unpublished. `stdioServerSpec()` writes the absolute `process.execPath` + `dist/cli.js` when running from a source checkout (`src/cli.ts` present, not under `node_modules`). Overrides: `COURSECOPILOT_SETUP_NPX=1` (force published), `COURSECOPILOT_SETUP_LOCAL=1` (force local). README badges and MCPB still use the published npx entry.
+3. **Hosted multi-user.** `COURSECOPILOT_HOSTED=1`, `--hosted`, or a PaaS `PORT` enables per-user isolation: OAuth 2.1 + DCR + PKCE binds tokens to `user_id`; each user gets `$COURSECOPILOT_HOME/users/<id>/cc.db` plus secrets and leccap session. Request-scoped `AsyncLocalStorage` so Canvas/leccap path helpers resolve the right home. Process-wide `CANVAS_TOKEN` is ignored inside a hosted user scope.
+4. **Connector URL.** Primary public URL is `https://<host>/mcp`. Landing `/` leads with Add to Claude / ChatGPT / Gemini. Secret-path remains as a weaker single-user option.
+5. **In-chat onboarding.** Tools `get_started`, `connect_canvas`, `connect_leccap`, `add_course_pack`, `browse_packs`, `add_course_website`, `add_youtube`, `upload_files` plus prompt `get_started`. Hosted pages `/connect/canvas`, `/connect/leccap`, `/upload` use short-lived signed flow tokens.
+6. **Leccap hosted limit.** UMich SSO + Duo cannot complete on the server. Preferred: the same MV3 extension calls product/webvtt with the signed-in session (no cookie copy). Fallback: paste Playwright storageState / cookies.txt. Bookmarklet is incomplete. Self-host headed Playwright stays Advanced.
+7. **Rate limits.** In-memory token bucket, `COURSECOPILOT_RATE_LIMIT_RPM` (default 120) on `/mcp`, OAuth token/register, connect/upload POSTs, and `/api/pair` + `/api/sync/*`.
+8. **Existing tools stay.** `add_pack` / `list_packs` / `add_source` remain; the new names are chat-facing aliases/wrappers.
+9. **Canvas without a personal token (UMich and many schools).** `connect_canvas` is ICS-first: Calendar → Calendar Feed. `canvas_list_assignments` / `whats_due` read that feed when no PAT is present. Secrets key `canvas.ics_url` (and `CANVAS_ICS_URL` in stdio).
+10. **MV3 browser extension (`extension/`).** Chrome / Edge / Firefox. User installs once, signs into Canvas and leccap via SSO, pairs with a one-time chat/page code (`POST /api/pair` → `cc_sync_…`), then clicks Sync. Same-origin `fetch` + CSRF; cookies never uploaded. Canvas snapshot → live tools; leccap product/webvtt snapshot → ingest without cookie copy. Documented as read-only and user-initiated.
+11. **PAT remains Tier 3** for schools that still show “+ New Access Token.” Hosted page and CLI (`--token` / `--ics-url`) keep that path.

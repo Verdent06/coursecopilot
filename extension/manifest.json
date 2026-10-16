@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "CourseCopilot Sync",
+  "version": "0.1.0",
+  "description": "Read-only, user-initiated sync of your signed-in Canvas (and UMich leccap) to your CourseCopilot library. No personal access token, no passwords.",
+  "action": {
+    "default_title": "CourseCopilot Sync",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage", "tabs", "cookies"],
+  "host_permissions": [
+    "https://*.instructure.com/*",
+    "https://leccap.engin.umich.edu/*"
+  ],
+  "optional_host_permissions": ["https://*/*"],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "coursecopilot-sync@coursecopilot.dev",
+      "strict_min_version": "109.0"
+    }
+  }
+}

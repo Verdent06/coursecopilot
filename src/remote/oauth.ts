@@ -1,10 +1,12 @@
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { AuthInfo, OAuthMetadata } from "@modelcontextprotocol/server";
 import {
   getOAuthProtectedResourceMetadataUrl,
   oauthMetadataResponse,
 } from "@modelcontextprotocol/server";
+import { parseCookies, signCookie, verifyCookie } from "../hosted/flow.js";
+import type { UserStore } from "../hosted/users.js";
 import { randomToken, sha256Base64Url, timingSafeEqualString } from "../util/crypto.js";
 import { log } from "../util/log.js";
 import { staticAuthInfo } from "./auth.js";
@@ -23,6 +25,7 @@ type AuthCode = {
   code_challenge: string;
   resource?: string;
   expires_at: number;
+  user_id?: string;
 };
 
 type IssuedToken = {
@@ -31,6 +34,7 @@ type IssuedToken = {
   client_id: string;
   resource?: string;
   expires_at: number;
+  user_id?: string;
 };
 
 type PersistedState = {
@@ -47,6 +51,10 @@ export type SingleUserOAuthOptions = {
   autoApprove: boolean;
   /** Path of the MCP resource, e.g. `/mcp`. */
   resourcePath: string;
+  /** Multi-user hosted mode: bind tokens to isolated user libraries. */
+  hosted?: boolean;
+  userStore?: UserStore;
+  sessionSecret?: string;
 };
 
 /**
@@ -63,14 +71,24 @@ export class SingleUserOAuth {
   private readonly persistPath: string;
   readonly autoApprove: boolean;
   readonly resourcePath: string;
+  readonly hosted: boolean;
+  readonly userStore?: UserStore;
+  readonly sessionSecret?: string;
 
   constructor(opts: SingleUserOAuthOptions) {
     this.autoApprove = opts.autoApprove;
+    this.hosted = Boolean(opts.hosted);
+    this.userStore = opts.userStore;
+    this.sessionSecret = opts.sessionSecret;
     this.resourcePath = opts.resourcePath.startsWith("/")
       ? opts.resourcePath
       : `/${opts.resourcePath}`;
     this.persistPath = join(opts.homeDir, "oauth.json");
     this.load();
+  }
+
+  userIdForToken(token: string): string | undefined {
+    return this.tokens.get(token)?.user_id;
   }
 
   issuerFrom(request: Request): string {
@@ -260,9 +278,18 @@ export class SingleUserOAuth {
       return redirectWith(redirectUri, { error: "access_denied", state });
     }
 
+    const identity = this.resolveHostedIdentity(request, params);
+    if (identity instanceof Response) {
+      return identity;
+    }
+
     const approved = this.autoApprove || (request.method === "POST" && params.approve === "allow");
     if (!approved) {
-      return consentPage(params);
+      return consentPage(params, {
+        hosted: this.hosted,
+        recoveryKey: identity?.recoveryKey,
+        userId: identity?.userId,
+      });
     }
 
     const code = randomToken(24);
@@ -273,8 +300,55 @@ export class SingleUserOAuth {
       code_challenge: challenge,
       resource,
       expires_at: Date.now() + CODE_TTL_MS,
+      user_id: identity?.userId,
     });
-    return redirectWith(redirectUri, { code, state });
+    const response = redirectWith(redirectUri, { code, state });
+    if (identity?.userId && this.sessionSecret) {
+      const headers = new Headers(response.headers);
+      headers.append(
+        "set-cookie",
+        `cc_user=${encodeURIComponent(signCookie(this.sessionSecret, identity.userId))}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}`,
+      );
+      return new Response(response.body, { status: response.status, headers });
+    }
+    return response;
+  }
+
+  /**
+   * Hosted mode: create or resume a per-user library before issuing a code.
+   * Returns a Response when the browser still needs an identity form.
+   */
+  private resolveHostedIdentity(
+    request: Request,
+    params: Record<string, string>,
+  ): { userId?: string; recoveryKey?: string } | Response | undefined {
+    if (!this.hosted || !this.userStore) {
+      return undefined;
+    }
+    if (this.autoApprove) {
+      const created = this.userStore.create();
+      return { userId: created.user.id, recoveryKey: created.recoveryKey };
+    }
+    const cookies = parseCookies(request.headers.get("cookie"));
+    const cookieUser =
+      this.sessionSecret && cookies.cc_user
+        ? verifyCookie(this.sessionSecret, cookies.cc_user)
+        : undefined;
+    if (params.recovery_key && this.userStore.findByRecovery(params.recovery_key)) {
+      const user = this.userStore.findByRecovery(params.recovery_key);
+      return { userId: user?.id };
+    }
+    if (params.new_library === "1") {
+      const created = this.userStore.create();
+      return { userId: created.user.id, recoveryKey: created.recoveryKey };
+    }
+    if (cookieUser && this.userStore.get(cookieUser)) {
+      return { userId: cookieUser };
+    }
+    if (params.approve === "allow" && params.user_id && this.userStore.get(params.user_id)) {
+      return { userId: params.user_id };
+    }
+    return consentPage(params, { hosted: true, needIdentity: true });
   }
 
   private async handleToken(request: Request): Promise<Response> {
@@ -308,7 +382,7 @@ export class SingleUserOAuth {
     if (!timingSafeEqualString(sha256Base64Url(verifier), code.code_challenge)) {
       return json({ error: "invalid_grant", error_description: "PKCE verification failed" }, 400);
     }
-    const issued = this.issueTokens(code.client_id, code.resource ?? params.resource);
+    const issued = this.issueTokens(code.client_id, code.resource ?? params.resource, code.user_id);
     return json({
       access_token: issued.access_token,
       refresh_token: issued.refresh_token,
@@ -328,7 +402,7 @@ export class SingleUserOAuth {
       return json({ error: "invalid_grant" }, 400);
     }
     this.tokens.delete(existing.access_token);
-    const issued = this.issueTokens(existing.client_id, existing.resource);
+    const issued = this.issueTokens(existing.client_id, existing.resource, existing.user_id);
     return json({
       access_token: issued.access_token,
       refresh_token: issued.refresh_token,
@@ -338,13 +412,14 @@ export class SingleUserOAuth {
     });
   }
 
-  private issueTokens(clientId: string, resource?: string): IssuedToken {
+  private issueTokens(clientId: string, resource?: string, userId?: string): IssuedToken {
     const issued: IssuedToken = {
       access_token: randomToken(32),
       refresh_token: randomToken(32),
       client_id: clientId,
       resource,
       expires_at: Math.floor(Date.now() / 1000) + ACCESS_TTL_S,
+      user_id: userId,
     };
     this.tokens.set(issued.access_token, issued);
     this.prune();
@@ -399,6 +474,7 @@ export class SingleUserOAuth {
 
   private save(): void {
     try {
+      mkdirSync(dirname(this.persistPath), { recursive: true });
       const state: PersistedState = {
         clients: [...this.clients.values()],
         tokens: [...this.tokens.values()],
@@ -481,8 +557,16 @@ function redirectWith(redirectUri: string, params: Record<string, string | undef
   return cors(new Response(null, { status: 302, headers: { Location: dest.toString() } }));
 }
 
-function consentPage(params: Record<string, string>): Response {
-  const hidden = [
+function consentPage(
+  params: Record<string, string>,
+  opts: {
+    hosted?: boolean;
+    needIdentity?: boolean;
+    recoveryKey?: string;
+    userId?: string;
+  } = {},
+): Response {
+  const hiddenNames = [
     "client_id",
     "redirect_uri",
     "state",
@@ -490,28 +574,59 @@ function consentPage(params: Record<string, string>): Response {
     "code_challenge_method",
     "resource",
     "response_type",
-  ]
+    "user_id",
+  ];
+  if (opts.userId && !params.user_id) {
+    params = { ...params, user_id: opts.userId };
+  }
+  const hidden = hiddenNames
     .map((name) => {
       const v = params[name];
       return v ? `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(v)}" />` : "";
     })
     .join("");
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"/><title>CourseCopilot — Approve access</title>
-<style>
-  body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; }
-  button { font-size: 1rem; padding: .5rem 1rem; margin-right: .5rem; }
-</style>
-</head>
-<body>
-  <h1>Approve CourseCopilot</h1>
-  <p>An AI client (<code>${escapeHtml(params.client_id ?? "")}</code>) wants to use the course index on this machine. This is a single-user, self-hosted server — only approve if you started this request.</p>
+  const recovery = opts.recoveryKey
+    ? `<p><strong>Save your library key</strong> (needed to reconnect from another browser):</p>
+       <p><code>${escapeHtml(opts.recoveryKey)}</code></p>`
+    : "";
+  const identity = opts.needIdentity
+    ? `<h1>Create your CourseCopilot library</h1>
+  <p>Claude, ChatGPT, or Gemini wants to connect. Each person gets an isolated course index on this server. Passwords are not used — save the library key we show after you continue.</p>
+  <form method="post">
+    ${hidden}
+    <button type="submit" name="new_library" value="1">Create my library</button>
+  </form>
+  <form method="post" style="margin-top:1.5rem">
+    ${hidden}
+    <label>I already have a library key<br/>
+      <input name="recovery_key" autocomplete="off" style="width:100%;margin:.4rem 0 1rem"/>
+    </label>
+    <button type="submit">Open existing library</button>
+  </form>`
+    : `<h1>${opts.hosted ? "Approve access to your library" : "Approve CourseCopilot"}</h1>
+  <p>${
+    opts.hosted
+      ? "An AI client wants to use <strong>your</strong> isolated course index on this hosted CourseCopilot. Only approve if you started this request."
+      : "An AI client wants to use the course index on this machine. This is a single-user, self-hosted server — only approve if you started this request."
+  }</p>
+  ${recovery}
+  <p>Client: <code>${escapeHtml(params.client_id ?? "")}</code></p>
   <form method="post">
     ${hidden}
     <button type="submit" name="approve" value="allow">Approve</button>
     <button type="submit" name="approve" value="deny">Deny</button>
-  </form>
+  </form>`;
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"/><title>CourseCopilot — Approve access</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; line-height: 1.45; }
+  button { font-size: 1rem; padding: .5rem 1rem; margin-right: .5rem; }
+  code { word-break: break-all; }
+</style>
+</head>
+<body>
+  ${identity}
 </body>
 </html>`;
   return cors(

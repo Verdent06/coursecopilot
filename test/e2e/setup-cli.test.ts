@@ -79,8 +79,8 @@ describe("CLI setup / doctor", () => {
     const json = JSON.parse(readFileSync(join(dir, ".cursor", "mcp.json"), "utf8")) as {
       mcpServers: { coursecopilot: { command: string; args: string[] } };
     };
-    expect(json.mcpServers.coursecopilot.command).toBe("npx");
-    expect(json.mcpServers.coursecopilot.args).toEqual(["-y", "coursecopilot@latest"]);
+    expect(json.mcpServers.coursecopilot.command).toBe(process.execPath);
+    expect(json.mcpServers.coursecopilot.args[0]).toMatch(/[/\\]cli\.js$/);
     expect(wrote.stdout).toMatch(/deeplink/i);
     expect(wrote.stdout).toMatch(/claude\.ai/i);
   });

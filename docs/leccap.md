@@ -6,7 +6,27 @@ This is a **generic lecture-capture adapter**. Panopto and Kaltura can implement
 
 You never download the video. CourseCopilot never stores your UMich password.
 
-## One-minute setup (UMich student)
+## Hosted / in-chat (no terminal)
+
+Call `connect_leccap` in Claude / ChatGPT / Gemini.
+
+**Preferred — same browser extension as Canvas (no cookie copying):**
+
+1. Install [CourseCopilot Sync](../extension/README.md) (Chrome / Edge / Firefox).
+2. Pair it with the one-time code from `connect_leccap` / `connect_canvas`.
+3. Open a signed-in [leccap.engin.umich.edu](https://leccap.engin.umich.edu) site or player tab (SSO + Duo in *your* browser).
+4. Click **Sync leccap**. The extension reads captions and the slide timeline from `/player/api/product/` and `/player/api/webvtt/` with your session. Cookies stay in the browser.
+5. Back in chat, `add_source` with `kind: "leccap"` and the site or player URL. Ingest uses the snapshot and does not need a cookie file.
+
+**Fallback — cookie export** on `/connect/leccap`:
+
+1. Open leccap and complete Duo.
+2. Export cookies (Cookie-Editor → Playwright `storageState` or `cookies.txt`), including HttpOnly `umich.edu` / Shibboleth cookies.
+3. Paste the export on the hosted page.
+
+A bookmarklet only sees non-HttpOnly cookies and often fails after Duo. Self-host Advanced (headed Playwright) is below.
+
+## One-minute setup (local laptop)
 
 1. **Sign in once** (a real browser window; Okta + Duo):
 

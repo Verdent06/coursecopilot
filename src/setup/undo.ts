@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { getHomeDir } from "../util/paths.js";
 
@@ -30,7 +30,7 @@ export function recordUndoSession(session: UndoSession, homeDir = getHomeDir()):
   if (log.sessions.length > MAX_SESSIONS) {
     log.sessions = log.sessions.slice(-MAX_SESSIONS);
   }
-  writeFileSync(undoLogPath(homeDir), `${JSON.stringify(log, null, 2)}\n`, "utf8");
+  writeUndoLog(homeDir, log);
 }
 
 export function readUndoLog(homeDir = getHomeDir()): UndoLog {
@@ -70,6 +70,12 @@ export function undoLastSetup(homeDir = getHomeDir()): UndoResult {
       removed.push(file.path);
     }
   }
-  writeFileSync(undoLogPath(homeDir), `${JSON.stringify(log, null, 2)}\n`, "utf8");
+  writeUndoLog(homeDir, log);
   return { ok: true, restored, removed };
+}
+
+/** Create `$COURSECOPILOT_HOME` if needed so a first-run setup does not ENOENT. */
+export function writeUndoLog(homeDir: string, log: UndoLog): void {
+  mkdirSync(homeDir, { recursive: true });
+  writeFileSync(undoLogPath(homeDir), `${JSON.stringify(log, null, 2)}\n`, "utf8");
 }

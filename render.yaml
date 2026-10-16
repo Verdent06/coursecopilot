@@ -21,6 +21,12 @@ services:
         generateValue: true
       - key: COURSECOPILOT_BIND
         value: "0.0.0.0"
+      - key: COURSECOPILOT_HOSTED
+        value: "1"
+      - key: COURSECOPILOT_PUBLIC_URL
+        sync: false
+      - key: COURSECOPILOT_SESSION_SECRET
+        generateValue: true
       - key: CANVAS_TOKEN
         sync: false
       - key: CANVAS_BASE_URL
